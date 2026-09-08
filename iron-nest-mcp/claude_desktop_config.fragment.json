@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "iron-nest-fcs": {
+      "command": "python3",
+      "args": ["/ABS/PATH/TO/iron-nest-mcp/server.py"]
+    }
+  }
+}
