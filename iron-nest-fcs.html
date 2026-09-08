@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>IRON NEST — FCS MK-II</title>
+<style>
+  :root { --bg:#16130f; --panel:#221c16; --ink:#ead9b4; --muted:#a89068; --accent:#d4a017; --line:#3d3224; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:"IBM Plex Mono","Courier New",monospace; background:#16130f; color:var(--ink); }
+  header { border-bottom:2px solid var(--accent); padding:14px 20px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  header h1 { margin:0; font-size:16px; letter-spacing:.14em; text-transform:uppercase; }
+  header small { color:var(--muted); }
+  main { display:grid; grid-template-columns: 360px 1fr; gap:12px; padding:12px; }
+  @media (max-width:1100px){ main { grid-template-columns:1fr; } }
+  section { background:var(--panel); border:1px solid var(--line); padding:12px; }
+  h2 { margin:0 0 8px; font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); }
+  textarea,input,select,button { font-family:inherit; font-size:13px; }
+  textarea { width:100%; min-height:160px; background:#100c08; color:var(--ink); border:1px solid var(--line); padding:8px; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0; }
+  label { font-size:11px; color:var(--muted); display:flex; flex-direction:column; gap:4px; }
+  input,select { background:#100c08; color:var(--ink); border:1px solid var(--line); padding:6px 8px; }
+  button { background:var(--accent); color:#1a120c; border:0; padding:8px 12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; cursor:pointer; }
+  button.ghost { background:transparent; color:var(--ink); border:1px solid var(--line); }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th,td { border-bottom:1px solid var(--line); padding:6px; text-align:left; vertical-align:top; }
+  th { color:var(--muted); font-size:10px; text-transform:uppercase; }
+  .tag { border:1px solid var(--line); padding:1px 5px; font-size:10px; }
+  .kpi { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
+  .kpi div { border:1px solid var(--line); padding:6px 8px; font-size:11px; }
+  .kpi b { display:block; color:var(--accent); font-size:15px; }
+  .mcp { background:#100c08; border:1px dashed var(--accent); padding:10px; white-space:pre-wrap; font-size:11px; line-height:1.4; }
+  .hint { color:var(--muted); font-size:11px; line-height:1.4; }
+  .alt { color:var(--muted); font-size:11px; }
+  .plan { border:1px solid var(--line); padding:8px; margin:6px 0; }
+  .plan strong { color:var(--accent); }
+  svg.map { width:100%; height:360px; background:#100c08; border:1px solid var(--line); }
+  a { color:var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Iron Nest · FCS MK-II</h1>
+  <small>compatible Byrod · rayon d obus · tirs groupés · double tube</small>
+</header>
+<main>
+  <section>
+    <h2>01 · Briefing</h2>
+    <p class="hint">Même formule que le calculateur Byrod : élévation = 12 × km / charges. Ici on ajoute le rayon d effet et les regroupements.</p>
+    <textarea id="brief">j ai 5 cibles
+Azimut 55.3 distance 12.7
+Azimut 54.2 distance 9.7 Iron nest enemis
+Azimut 59.3 distance 8.7
+Azimut 52.3 distance 2.7 bunker
+Azimut 51.3 distance 22.7 infantry</textarea>
+    <div class="row">
+      <label>Charges
+        <select id="chargeMode">
+          <option value="max" selected>Max (ToF court)</option>
+          <option value="min">Min (eco)</option>
+        </select>
+      </label>
+      <label>Munitions
+        <select id="ammoPref">
+          <option value="auto">Auto</option>
+          <option value="he">Forcer HE</option>
+          <option value="eco">Eco (LE)</option>
+          <option value="chem">Chimiques OK</option>
+        </select>
+      </label>
+    </div>
+    <div class="row">
+      <button onclick="solve()">Calculer</button>
+      <button class="ghost" onclick="copyMcp()">Copier plan</button>
+    </div>
+  </section>
+  <section>
+    <h2>02 · Carte polaire (Nest au centre)</h2>
+    <svg class="map" id="map" viewBox="-31 -31 62 62"></svg>
+    <p class="hint">Cercle pointille or = blast du meilleur tir groupe. N = azimut 0.</p>
+  </section>
+  <section style="grid-column:1/-1">
+    <h2>03 · Solutions individuelles + rayon</h2>
+    <div class="kpi" id="kpis"></div>
+    <div style="overflow:auto">
+      <table>
+        <thead><tr><th>#</th><th>Cible</th><th>Az / Dist</th><th>Charge · Elev · ToF</th><th>Obus · blast</th><th>Tube</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+  <section>
+    <h2>04 · Tirs groupes (1 obus, N cibles)</h2>
+    <p class="hint">Chaque cible comme point d impact, plus le milieu de chaque paire. Valide si au moins 2 cibles dans le rayon. Bunker / Nest : splash seulement avec APHE / EQKE, sinon AP en visee directe.</p>
+    <div id="groups"></div>
+  </section>
+  <section>
+    <h2>05 · Double tube (meme traverse)</h2>
+    <p class="hint">Les deux canons partagent l azimut tourelle, elevations independantes. Si delta az &lt;= 2, un seul pointage horizontal.</p>
+    <div id="dual"></div>
+  </section>
+  <section style="grid-column:1/-1">
+    <h2>06 · Plan de feu</h2>
+    <div class="mcp" id="mcp">...</div>
+  </section>
+</main>
+<script>
+const SPEEDS = {1:0.21,2:0.31,3:0.41,4:0.50,5:0.60,6:0.70};
+const SHELLS = {
+  HE:{dmg:1,blast:0.25,cost:10,note:"Fragmentation"},
+  HCHE:{dmg:1,blast:0.55,cost:18,note:"Gros rayon"},
+  AP:{dmg:2,blast:0.15,cost:10,note:"Penetration"},
+  APHE:{dmg:2,blast:0.25,cost:15,note:"AP + souffle"},
+  EQKE:{dmg:2,blast:0.55,cost:26,note:"Souterrain"},
+  CLMN:{dmg:1,blast:0.50,cost:17,note:"Cluster"},
+  FLCH:{dmg:1,blast:0.62,cost:20,note:"Flechettes"},
+  PHGN:{dmg:1,blast:0.62,cost:10,note:"Phosgene"},
+  CYAN:{dmg:1,blast:0.75,cost:28,note:"Cyanogene"},
+  INCN:{dmg:1,blast:0.25,cost:12,note:"Incendiaire"},
+  THRM:{dmg:1,blast:0.35,cost:22,note:"Thermite"},
+  SMK:{dmg:0,blast:1.00,cost:2,note:"Fumee"},
+  STAR:{dmg:0,blast:0.50,cost:2,note:"Eclairement"},
+  TEAR:{dmg:0,blast:0.75,cost:8,note:"Lacrymo"},
+  WP:{dmg:0,blast:0.75,cost:10,note:"WP"},
+  LE:{dmg:1,blast:0.15,cost:8,note:"HE eco"}
+};
+const HARD = new Set(["bunker","nest","hard","armor"]);
+const AREA = ["HCHE","CLMN","FLCH","PHGN","CYAN","HE","APHE","EQKE","WP","THRM"];
+const minCharge = km => km<=0||km>30 ? null : Math.max(1,Math.min(6,Math.ceil(km/5)));
+const elev = (km,c) => 12*km/c;
+const tof = (km,c) => km/SPEEDS[c];
+function classify(raw){
+  const t=(raw||"").toLowerCase();
+  if(/iron.?nest|nest enem/.test(t)) return "nest";
+  if(/bunker|fort|armor|armour|hard|palace/.test(t)) return "bunker";
+  if(/infant|troop|squad|fantassin/.test(t)) return "infantry";
+  if(/artill|battery|fdc|canon/.test(t)) return "artillery";
+  if(/train|boat|ship|convoi|vehicle|tank|mech/.test(t)) return "vehicle";
+  if(/smoke|fum/.test(t)) return "smoke";
+  if(/illum|star|night|nuit/.test(t)) return "illum";
+  return "unknown";
+}
+function pickShell(kind,pref,clustered){
+  if(pref==="he") return "HE";
+  if(kind==="bunker"||kind==="nest"||kind==="hard") return clustered?"APHE":"AP";
+  if(kind==="infantry") return pref==="chem"?"PHGN":"HCHE";
+  if(kind==="artillery") return clustered?"HCHE":"HE";
+  if(kind==="smoke") return "SMK";
+  if(kind==="illum") return "STAR";
+  if(pref==="eco") return "LE";
+  if(clustered) return "HCHE";
+  return "HE";
+}
+function parseBrief(text){
+  const re=/(?:azim(?:ut|ute)?|az|bearing)?\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:°|deg)?\s*(?:[,;/]|dist(?:ance)?|range|-)?\s*([0-9]+(?:[.,][0-9]+)?)\s*(km|m)?\s*(.*)?/i;
+  const out=[];
+  for(const line of text.split(/\n+/)){
+    const m=line.match(re); if(!m) continue;
+    let az=parseFloat(m[1].replace(",","."));
+    let dist=parseFloat(m[2].replace(",","."));
+    if((m[3]&&m[3].toLowerCase()==="m")||(dist>30&&dist<=30000)) dist/=1000;
+    if(az>360||dist<=0||dist>30) continue;
+    const label=(m[4]||"").trim();
+    out.push({az,km:dist,label,kind:classify(label+" "+line)});
+  }
+  return out;
+}
+const xy = (az,km)=>[km*Math.sin(az*Math.PI/180), km*Math.cos(az*Math.PI/180)];
+const polar = (x,y)=>{ const km=Math.hypot(x,y); return {az:(Math.atan2(x,y)*180/Math.PI+360)%360, km}; };
+function sep(a,b){ const [x1,y1]=xy(a.az,a.km),[x2,y2]=xy(b.az,b.km); return Math.hypot(x1-x2,y1-y2); }
+function multiKill(targets, pref){
+  const plans=[], seen=new Set();
+  let shells = pref==="he" ? ["HE","HCHE"] : AREA.slice();
+  if(pref==="chem") shells=["PHGN","CYAN","WP","HCHE","HE"];
+  const cands=[];
+  targets.forEach(t=>{ const [x,y]=xy(t.az,t.km); cands.push({x,y,note:"sur T"+t.id}); });
+  for(let i=0;i<targets.length;i++) for(let j=i+1;j<targets.length;j++){
+    const [x1,y1]=xy(targets[i].az,targets[i].km);
+    const [x2,y2]=xy(targets[j].az,targets[j].km);
+    cands.push({x:(x1+x2)/2,y:(y1+y2)/2,note:"milieu T"+targets[i].id+"-T"+targets[j].id});
+  }
+  for(const c of cands){
+    const p=polar(c.x,c.y);
+    const cmin=minCharge(p.km); if(!cmin) continue;
+    for(const shell of shells){
+      const blast=SHELLS[shell].blast;
+      const splashHard = SHELLS[shell].dmg>=2;
+      const ids=[];
+      for(const t of targets){
+        const [x,y]=xy(t.az,t.km);
+        const d=Math.hypot(x-c.x,y-c.y);
+        if(d<=blast+1e-9){
+          if(HARD.has(t.kind) && !splashHard && d>0.02) continue;
+          ids.push(t.id);
+        }
+      }
+      if(ids.length<2) continue;
+      const key=ids.slice().sort((a,b)=>a-b).join("-")+"|"+shell;
+      if(seen.has(key)) continue;
+      seen.add(key);
+      plans.push({
+        aimAz:p.az, aimKm:p.km, note:c.note, shell, blast, ids, n:ids.length,
+        cMin:cmin, elevMin:elev(p.km,cmin), tofMin:tof(p.km,cmin),
+        elevMax:elev(p.km,6), tofMax:tof(p.km,6), cost:SHELLS[shell].cost, saved:ids.length-1
+      });
+    }
+  }
+  plans.sort((a,b)=> b.n-a.n || a.cost-b.cost);
+  return plans.slice(0,10);
+}
+function drawMap(targets, groups){
+  const svg=document.getElementById("map");
+  let rings="";
+  for(const r of [5,10,15,20,25,30]){
+    rings += '<circle cx="0" cy="0" r="'+r+'" fill="none" stroke="#3d3224" stroke-width=".08"/>';
+    rings += '<text x="0.3" y="'+(-r+0.7)+'" fill="#a89068" font-size="1.1">'+r+'</text>';
+  }
+  rings += '<line x1="0" y1="-30" x2="0" y2="30" stroke="#3d3224" stroke-width=".06"/>';
+  rings += '<line x1="-30" y1="0" x2="30" y2="0" stroke="#3d3224" stroke-width=".06"/>';
+  rings += '<text x="-1.2" y="-28.5" fill="#d4a017" font-size="1.4">N</text>';
+  rings += '<circle cx="0" cy="0" r=".45" fill="#d4a017"/>';
+  let blast="";
+  const best=groups[0];
+  if(best){
+    const [bx,by]=xy(best.aimAz,best.aimKm);
+    blast = '<circle cx="'+bx+'" cy="'+(-by)+'" r="'+best.blast+'" fill="rgba(212,160,23,.12)" stroke="#d4a017" stroke-dasharray=".4 .3" stroke-width=".12"/>';
+    blast += '<circle cx="'+bx+'" cy="'+(-by)+'" r=".25" fill="#d4a017"/>';
+  }
+  const dots = targets.map(t=>{
+    const [x,y]=xy(t.az,t.km);
+    const col = HARD.has(t.kind)?"#c45c2a":"#ead9b4";
+    return '<circle cx="'+x+'" cy="'+(-y)+'" r=".35" fill="'+col+'"/>'+
+           '<text x="'+(x+0.5)+'" y="'+(-y-0.4)+'" fill="#ead9b4" font-size="1.2">T'+t.id+'</text>';
+  }).join("");
+  svg.innerHTML = rings+blast+dots;
+}
+function solve(){
+  const targets=parseBrief(document.getElementById("brief").value);
+  const mode=document.getElementById("chargeMode").value;
+  const pref=document.getElementById("ammoPref").value;
+  if(!targets.length){ document.getElementById("tbody").innerHTML="<tr><td colspan=6>Aucune cible.</td></tr>"; return; }
+  targets.forEach((t,i)=>t.id=i+1);
+  const cluster=new Set();
+  for(let i=0;i<targets.length;i++) for(let j=i+1;j<targets.length;j++)
+    if(sep(targets[i],targets[j])<=0.55){ cluster.add(targets[i].id); cluster.add(targets[j].id); }
+  const sols=targets.map((t,idx)=>{
+    const cMin=minCharge(t.km);
+    if(!cMin) return Object.assign({},t,{error:"hors portee"});
+    const charges=mode==="max"?6:cMin;
+    const shell=pickShell(t.kind,pref,cluster.has(t.id));
+    return Object.assign({},t,{cMin,charges,elev:elev(t.km,charges),elevMin:elev(t.km,cMin),flight:tof(t.km,charges),clustered:cluster.has(t.id),shell,gun:idx%2===0?"GAUCHE":"DROITE"});
+  });
+  const groups=multiKill(targets,pref);
+  const dual=[];
+  for(let i=0;i<targets.length;i++) for(let j=i+1;j<targets.length;j++){
+    let d=Math.abs(targets[i].az-targets[j].az); d=Math.min(d,360-d);
+    if(d<=2) dual.push({a:targets[i],b:targets[j],d});
+  }
+  const cost=sols.reduce((s,x)=>s+(SHELLS[x.shell]?SHELLS[x.shell].cost:0),0);
+  document.getElementById("kpis").innerHTML =
+    "<div><b>"+sols.length+"</b>cibles</div>"+
+    "<div><b>"+cost+" RC</b>si 1 obus / cible</div>"+
+    "<div><b>"+(groups[0]?groups[0].n:1)+"</b>max / tir groupe</div>"+
+    "<div><b>"+dual.length+"</b>paires double tube</div>";
+  document.getElementById("tbody").innerHTML=sols.map(s=>{
+    if(s.error) return "<tr><td>"+s.id+"</td><td colspan=5>"+s.error+"</td></tr>";
+    const sh=SHELLS[s.shell];
+    return "<tr><td>"+s.id+"</td><td>"+s.kind+(s.clustered?" · cluster":"")+"<div class=alt>"+(s.label||"type inconnu → HE")+"</div></td>"+
+      "<td>"+s.az.toFixed(1)+"° · "+s.km.toFixed(2)+" km</td>"+
+      "<td>C"+s.charges+" (min C"+s.cMin+")<br>"+s.elev.toFixed(2)+"° · "+s.flight.toFixed(1)+"s</td>"+
+      "<td><span class=tag>"+s.shell+"</span> blast <b>"+sh.blast+" km</b> ("+((sh.blast*1000)|0)+" m)<div class=alt>"+sh.note+" · dmg "+sh.dmg+" · "+sh.cost+" RC</div></td>"+
+      "<td>"+s.gun+"</td></tr>";
+  }).join("");
+  document.getElementById("groups").innerHTML = groups.length ? groups.map(g=>
+    "<div class=plan><strong>"+g.shell+"</strong> blast "+g.blast+" km · vise "+g.note+"<br>"+
+    "AZ "+g.aimAz.toFixed(2)+"° · "+g.aimKm.toFixed(2)+" km · Cmin "+g.cMin+" → "+g.elevMin.toFixed(1)+"° / "+g.tofMin.toFixed(1)+"s "+
+    "(ou C6 → "+g.elevMax.toFixed(1)+"° / "+g.tofMax.toFixed(1)+"s)<br>"+
+    "Couvre T"+g.ids.join(", T")+" · economise "+g.saved+" tir(s) · "+g.cost+" RC</div>"
+  ).join("") : "<p class=hint>Aucun regroupement : cibles trop ecartees pour un seul rayon.</p>";
+  document.getElementById("dual").innerHTML = dual.length ? dual.map(p=>{
+    const ca=minCharge(p.a.km), cb=minCharge(p.b.km);
+    const ea=elev(p.a.km, mode==="max"?6:ca), eb=elev(p.b.km, mode==="max"?6:cb);
+    return "<div class=plan>T"+p.a.id+" ("+p.a.km.toFixed(2)+" km) + T"+p.b.id+" ("+p.b.km.toFixed(2)+" km) · Δaz "+p.d.toFixed(2)+"°<br>"+
+      "GAUCHE C"+ca+" "+ea.toFixed(1)+"° · DROITE C"+cb+" "+eb.toFixed(1)+"°</div>";
+  }).join("") : "<p class=hint>Pas de paire a Δaz ≤ 2°.</p>";
+  drawMap(targets, groups);
+  const rank=k=>({nest:0,bunker:1,artillery:2,vehicle:3,infantry:4,unknown:5}[k]||6);
+  const ordered=sols.slice().sort((a,b)=>rank(a.kind)-rank(b.kind)||a.km-b.km);
+  const lines=["IRON NEST FCS  ·  PLAN DE FEU","mode "+mode+"  pref "+pref,""];
+  ordered.forEach(s=>{
+    if(s.error) lines.push("T"+s.id+" ERR");
+    else lines.push("T"+s.id+" "+s.kind.toUpperCase()+"  AZ "+s.az.toFixed(1)+"  "+s.km.toFixed(2)+"km  "+s.shell+" blast "+SHELLS[s.shell].blast+"km  C"+s.charges+"  ELEV "+s.elev.toFixed(2)+"  ToF "+s.flight.toFixed(1)+"s  "+s.gun);
+  });
+  lines.push("","GROUPES");
+  if(groups.length) groups.slice(0,5).forEach(g=>lines.push("  "+g.shell+" @ "+g.aimAz.toFixed(1)+"°/"+g.aimKm.toFixed(2)+"km blast "+g.blast+" → T"+g.ids.join(",T")));
+  else lines.push("  aucun");
+  lines.push("","DOUBLE TUBE");
+  if(dual.length) dual.forEach(p=>lines.push("  T"+p.a.id+"+T"+p.b.id+" Δaz "+p.d.toFixed(2)+"°"));
+  else lines.push("  aucun");
+  document.getElementById("mcp").textContent=lines.join("\n");
+}
+function copyMcp(){ navigator.clipboard.writeText(document.getElementById("mcp").textContent); }
+solve();
+</script>
+</body>
+</html>

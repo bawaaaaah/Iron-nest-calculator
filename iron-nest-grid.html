@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>IRON NEST — Grille</title>
+<style>
+:root{--bg:#14110d;--p:#221c16;--ink:#ead9b4;--m:#a89068;--a:#d4a017;--l:#3d3224;--bad:#c45c2a;}
+*{box-sizing:border-box}
+body{margin:0;font-family:"IBM Plex Mono","Courier New",monospace;background:var(--bg);color:var(--ink)}
+header{border-bottom:2px solid var(--a);padding:12px 16px}
+h1{margin:0;font-size:15px;letter-spacing:.12em;text-transform:uppercase}
+small{color:var(--m)}
+main{display:grid;grid-template-columns:380px 1fr;gap:10px;padding:10px}
+@media(max-width:980px){main{grid-template-columns:1fr}}
+section{background:var(--p);border:1px solid var(--l);padding:10px}
+h2{margin:0 0 8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--a)}
+input,select,button,textarea{font-family:inherit;font-size:13px}
+input,select,textarea{background:#100c08;color:var(--ink);border:1px solid var(--l);padding:6px 8px;width:100%}
+textarea{min-height:58px}
+label{font-size:11px;color:var(--m);display:block;margin:8px 0 4px}
+button{background:var(--a);color:#1a120c;border:0;padding:7px 10px;font-weight:700;text-transform:uppercase;cursor:pointer}
+button.g{background:transparent;color:var(--ink);border:1px solid var(--l)}
+button.s{padding:3px 7px;font-size:10px;margin:0 2px 0 0}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.hint{color:var(--m);font-size:11px;line-height:1.35}
+.bad{color:var(--bad)}
+.kpi{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.kpi div{border:1px solid var(--l);padding:6px 8px;font-size:11px}
+.kpi b{display:block;color:var(--a);font-size:18px}
+svg{width:100%;background:#100c08;border:1px solid var(--l);cursor:crosshair;touch-action:none}
+svg.place-on{outline:1px solid var(--a)}
+#mapHint{font-size:11px;color:var(--m);margin:4px 0 8px}
+#mapHint.on{color:var(--a)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{border-bottom:1px solid var(--l);padding:5px;text-align:left}
+th{color:var(--m);font-size:10px;text-transform:uppercase}
+.tabs{margin:8px 0}
+.tabs button{margin:0 4px 6px 0;font-size:11px}
+.tabs button.on{outline:1px solid #fff}
+.combo{display:grid;grid-template-columns:1fr 160px;gap:6px}
+.al{border-bottom:1px solid var(--l);padding:6px 0;font-size:12px}
+.chip{border:1px solid var(--l);padding:1px 5px;font-size:10px;color:var(--a)}
+.out{background:#100c08;border:1px dashed var(--a);padding:8px;white-space:pre-wrap;font-size:12px;margin-top:8px}
+.active{color:var(--a)}
+#mapWrap{position:relative}
+#mapCoord{position:absolute;bottom:8px;left:10px;background:rgba(16,12,8,.9);border:1px solid var(--l);padding:4px 8px;font-size:11px;color:var(--a);pointer-events:none}
+.tag-ok{background:#2a5a2a;color:#cfc;padding:1px 5px;font-size:10px}
+.tag-bad{background:#c45c2a;color:#fff;padding:1px 5px;font-size:10px}
+.tag-mid{background:#6a5a20;color:#fc6;padding:1px 5px;font-size:10px}
+
+</style>
+</head>
+<body>
+<header>
+  <h1>Iron Nest · Grille & triangulation</h1>
+  <small>A1–T10 · subdivisions décimales · 0° = Nord · wiki v1.0</small>
+</header>
+<main>
+<section>
+  <h2>Raccourcis</h2>
+  <div class="row3">
+    <div><label>Nom</label><input id="alName" placeholder="Observateur 1"></div>
+    <div><label>Case</label><input id="alCell" placeholder="G3 3:5"></div>
+    <div><label>Rôle</label>
+      <select id="alRole">
+        <option value="spotter">Observateur</option>
+        <option value="ref">Référence</option>
+        <option value="nest">Iron Nest</option>
+        <option value="target">Cible</option>
+        <option value="ally">Allié</option>
+      </select>
+    </div>
+  </div>
+  <div style="margin:8px 0">
+    <button type="button" id="btnAdd">Enregistrer</button>
+    <button class="g s" type="button" id="btnSeed">Exemple</button>
+    <button class="g s" type="button" id="btnReset">Reset</button>
+  </div>
+  <div class="row3" style="margin-bottom:8px">
+    <div><label>Session</label><input id="sessName" placeholder="Mission 1"></div>
+    <div><label> </label><button type="button" class="g" id="btnSaveSess">Sauver</button></div>
+    <div><label>Charger</label><select id="sessList"></select></div>
+  </div>
+  <div style="margin-bottom:8px">
+    <button class="g s" type="button" id="btnLoadSess">Charger</button>
+    <button class="g s" type="button" id="btnDelSess">Suppr. session</button>
+  </div>
+  <div id="aliasList"></div>
+  <p class="hint" id="canonState">Canon : non défini</p>
+
+  <h2 style="margin-top:14px">Calcul</h2>
+  <div class="tabs">
+    <button type="button" data-mode="direct" class="on">Nest → cible</button>
+    <button type="button" data-mode="azaz">2 azimuts</button>
+    <button type="button" data-mode="azd">Az + dist</button>
+    <button type="button" data-mode="dd">2 distances</button>
+  </div>
+
+  <div id="p-direct">
+    <label>Canon / Nest</label>
+    <div class="combo"><input id="nest" placeholder="Iron Nest ou B2 1:2"><select class="pick" data-for="nest"></select></div>
+    <label>Cibles (noms ou cases, une par ligne)</label>
+    <textarea id="tgts" placeholder="Cible 3">Cible 3</textarea>
+    <label>Ajouter une cible depuis la liste</label>
+    <select id="addTgt"></select>
+  </div>
+  <div id="p-azaz" hidden>
+    <label>Point A</label>
+    <div class="combo"><input id="a1" placeholder="Observateur 1"><select class="pick" data-for="a1"></select></div>
+    <label>Azimut A (°)</label><input id="az1" type="number" step="0.1" value="21.1">
+    <label>Point B</label>
+    <div class="combo"><input id="a2" placeholder="Alpha"><select class="pick" data-for="a2"></select></div>
+    <label>Azimut B (°)</label><input id="az2" type="number" step="0.1" value="320">
+  </div>
+  <div id="p-azd" hidden>
+    <label>Point A (azimut)</label>
+    <div class="combo"><input id="b1" placeholder="Observateur 1"><select class="pick" data-for="b1"></select></div>
+    <label>Azimut A (°)</label><input id="baz" type="number" step="0.1" value="45">
+    <label>Point B (distance)</label>
+    <div class="combo"><input id="b2" placeholder="Alpha"><select class="pick" data-for="b2"></select></div>
+    <label>Distance B (km)</label><input id="bd" type="number" step="0.01" value="6.5">
+  </div>
+  <div id="p-dd" hidden>
+    <label>Point A</label>
+    <div class="combo"><input id="c1" placeholder="Observateur 1"><select class="pick" data-for="c1"></select></div>
+    <label>Distance A (km)</label><input id="cd1" type="number" step="0.01" value="4">
+    <label>Point B</label>
+    <div class="combo"><input id="c2" placeholder="Alpha"><select class="pick" data-for="c2"></select></div>
+    <label>Distance B (km)</label><input id="cd2" type="number" step="0.01" value="7">
+  </div>
+  <label>Nest pour le tir</label>
+  <div class="combo"><input id="gun" placeholder="Iron Nest"><select class="pick" data-for="gun"></select></div>
+  <label>Charges</label>
+  <select id="modeSel">
+    <option value="min">Charge mini</option>
+    <option value="max">C6 (ToF court)</option>
+  </select>
+  <div style="margin-top:8px">
+    <button type="button" id="btnGo">Calculer</button>
+    <button class="g" type="button" id="btnCopy">Copier</button>
+  </div>
+</section>
+<section>
+  <h2>Carte + solution</h2>
+  <div class="row3" style="margin-bottom:6px">
+    <div>
+      <label>Clic carte →</label>
+      <select id="mapAction">
+        <option value="new">Nouveau point</option>
+        <option value="move">Déplacer un point</option>
+        <option value="aim">Point de chute</option>
+        <option value="off">Clic désactivé</option>
+      </select>
+    </div>
+    <div>
+      <label>Nom (nouveau)</label>
+      <input id="mapName" placeholder="Bravo">
+    </div>
+    <div>
+      <label>Rôle</label>
+      <select id="mapRole">
+        <option value="target">Cible</option>
+        <option value="ally">Allié</option>
+        <option value="spotter">Observateur</option>
+        <option value="ref">Référence</option>
+        <option value="nest">Iron Nest</option>
+      </select>
+    </div>
+  </div>
+  <p id="mapHint">Clic sur la grille pour placer un point. Clic près d’un point existant pour le sélectionner / déplacer.</p>
+  <div id="selPanel" style="display:none;border:1px solid var(--l);padding:8px;margin:6px 0;background:#100c08">
+    <div style="font-size:11px;color:var(--a);margin-bottom:6px;letter-spacing:.1em;text-transform:uppercase">Point sélectionné</div>
+    <div class="row3">
+      <div><label>Nom</label><input id="selName"></div>
+      <div><label>Case</label><input id="selCell" placeholder="B3 4:4"></div>
+      <div><label>Type / rôle</label>
+        <select id="selRole">
+          <option value="target">Cible</option>
+          <option value="ally">Allié</option>
+          <option value="spotter">Observateur</option>
+          <option value="ref">Référence</option>
+          <option value="nest">Iron Nest</option>
+        </select>
+      </div>
+    </div>
+    <div class="row3" style="margin-top:4px">
+      <div><label>Kind cible</label>
+        <select id="selKind">
+          <option value="unknown">Inconnu</option>
+          <option value="infantry">Infanterie</option>
+          <option value="bunker">Bunker</option>
+          <option value="nest">Iron Nest ennemi</option>
+          <option value="vehicle">Véhicule</option>
+          <option value="artillery">Artillerie</option>
+        </select>
+      </div>
+      <div><label>Obus</label><select id="selShell"></select></div>
+      <div><label>État</label>
+        <select id="selStatus">
+          <option value="active">Actif</option>
+          <option value="neutralized">Neutralisé</option>
+        </select>
+      </div>
+    </div>
+    <p class="hint" id="selInfo" style="margin-top:6px"></p>
+  </div>
+  <div id="tgtBoard" style="border:1px solid var(--l);padding:8px;margin:6px 0;background:#100c08">
+    <div style="font-size:11px;color:var(--a);margin-bottom:6px;letter-spacing:.1em;text-transform:uppercase">Tableau de bord — cibles du Nest</div>
+    <p class="hint">Un seul Nest tire. 2 tubes : Gauche / Droite. Coche les cibles assignées, change l’état pour le suivi.</p>
+    <div id="tgtBoardBody"></div>
+  </div>
+
+  <div id="aimPanel" style="border:1px solid var(--l);padding:8px;margin:6px 0;background:#100c08">
+    <div style="font-size:11px;color:var(--a);margin-bottom:6px;letter-spacing:.1em;text-transform:uppercase">Point de chute (multi-cibles)</div>
+    <p class="hint">Place un impact pour couvrir plusieurs cibles dans le rayon de l’obus. Mode carte : « Point de chute ».</p>
+    <div class="row3">
+      <div><label>Case impact</label><input id="aimCell" placeholder="C4 2:5"></div>
+      <div><label>Obus impact</label><select id="aimShell"></select></div>
+      <div><label> </label><button type="button" class="g" id="btnAimClear">Effacer impact</button></div>
+    </div>
+    <div id="aimResult" class="hint" style="margin-top:6px"></div>
+  </div>
+  <div class="kpi" id="kpis"></div>
+  <svg id="map" viewBox="-0.6 -0.6 21.2 11.2"></svg>
+  <div id="res"></div>
+  <div class="out" id="out"></div>
+</section>
+<section style="grid-column:1/-1">
+  <h2>Référence obus (wiki Iron Nest · 7 confirmés au lancement)</h2>
+  <div id="ammoRef"></div>
+  <p class="hint">Sources : ironnestwiki — HE 0.27 km / 3 rc · HCHE 0.63 km / 5 rc · AP 0.14 km / 3 rc · STAR illumination 12.74 km / 1 rc (0 dmg) · SMOKE 1.86 km / 1 rc (0 dmg, écran) · PHOSGENE ~1.85 km (infanterie) · TEAR GAS ~1.86 km (non-létal). Autres types = hypothèses communauté / non confirmés.</p>
+</section>
+</main>
+<script>
+(function(){
+const COLS="ABCDEFGHIJKLMNOPQRST";
+const SPEEDS={1:0.21,2:0.31,3:0.41,4:0.50,5:0.60,6:0.70};
+const ROLE={spotter:"Observateur",ref:"Référence",nest:"Iron Nest",target:"Cible",ally:"Allié"};
+const SHELLS={
+  // Confirmés wiki (2026-08-11)
+  HE:{blast:0.27,cost:3,dmg:true,confirmed:true,note:"HE standard — infanterie, artillerie, mécanisé",vs:{infantry:"ok",vehicle:"ok",artillery:"ok",bunker:"weak",nest:"weak",unknown:"ok"}},
+  HCHE:{blast:0.63,cost:5,dmg:true,confirmed:true,note:"Haut volume — clusters / formations serrées",vs:{infantry:"ok",vehicle:"ok",artillery:"ok",bunker:"weak",nest:"weak",unknown:"ok"}},
+  AP:{blast:0.14,cost:3,dmg:true,confirmed:true,note:"Pénétration — bunkers, blindés, positions dures",vs:{infantry:"weak",vehicle:"ok",artillery:"ok",bunker:"ok",nest:"ok",unknown:"ok"}},
+  STAR:{blast:12.74,cost:1,dmg:false,confirmed:true,note:"S.T.A.R. illumination — 0 dégât, révèle la map (nuit/brouillard)",vs:{infantry:"no",vehicle:"no",artillery:"no",bunker:"no",nest:"no",unknown:"no"}},
+  SMK:{blast:1.86,cost:1,dmg:false,confirmed:true,note:"SMOKE — écran / retrait alliés, 0 dégât",vs:{infantry:"no",vehicle:"no",artillery:"no",bunker:"no",nest:"no",unknown:"no"}},
+  PHGN:{blast:1.85,cost:null,dmg:true,confirmed:false,note:"PHOSGENE — gaz toxique (infanterie), infra intacte — coût non confirmé",vs:{infantry:"ok",vehicle:"weak",artillery:"weak",bunker:"no",nest:"no",unknown:"ok"}},
+  TGAS:{blast:1.86,cost:null,dmg:false,confirmed:false,note:"TEAR GAS — non-létal / foule — coût non confirmé",vs:{infantry:"no",vehicle:"no",artillery:"no",bunker:"no",nest:"no",unknown:"no"}},
+  // Non documentés au lancement (hypothèses calculateur)
+  APHE:{blast:0.25,cost:15,dmg:true,confirmed:false,note:"AP+HE (non confirmé wiki)",vs:{infantry:"ok",vehicle:"ok",artillery:"ok",bunker:"ok",nest:"ok",unknown:"ok"}},
+  LE:{blast:0.15,cost:8,dmg:true,confirmed:false,note:"HE léger (non confirmé)",vs:{infantry:"ok",vehicle:"weak",artillery:"weak",bunker:"no",nest:"no",unknown:"ok"}}
+};
+const DEFAULT_SHELL={unknown:"HE",infantry:"HCHE",bunker:"AP",nest:"AP",vehicle:"HE",artillery:"HCHE"};
+function shellVsTarget(shellName, kind){
+  const sh=SHELLS[shellName]||SHELLS.HE;
+  const k=kind||"unknown";
+  if(sh.dmg===false){
+    const det=shellName==="STAR"?"STAR = illumination / révélation map, 0 dégât (SAFE alliés)":shellName==="SMK"||shellName==="TGAS"?"Écran / non-létal — 0 dégât, SAFE alliés (permet déplacement)":(sh.note||"Pas de dégâts");
+    return {ok:false, level:"no", tag:"NO DMG", detail:det};
+  }
+  const level=(sh.vs&&sh.vs[k])||"ok";
+  if(level==="ok") return {ok:true, level:"ok", tag:"OK", detail:"Obus adapté"};
+  if(level==="weak") return {ok:false, level:"weak", tag:"FAIBLE", detail:"Peu efficace vs "+k+" — risque de ne pas détruire"};
+  return {ok:false, level:"no", tag:"INEFFICACE", detail:"Obus incapable de détruire une cible "+k};
+}
+const $=id=>document.getElementById(id);
+const minC=km=>km<=0||km>30?null:Math.max(1,Math.min(6,Math.ceil(km/5)));
+const elev=(km,c)=>12*km/c;
+const tof=(km,c)=>km/SPEEDS[c];
+let MODE="direct";
+const DEMO=[
+  {name:"Iron Nest",cell:"B2 1:2",role:"nest",kind:"unknown",shell:"HE",status:"active"},
+  {name:"Observateur 1",cell:"G3 3:5",role:"spotter",kind:"unknown",shell:"HE",status:"active"},
+  {name:"Alpha",cell:"J9 9:9",role:"ref",kind:"unknown",shell:"HE",status:"active"},
+  {name:"Cible 3",cell:"A7 8:9",role:"target",kind:"infantry",shell:"HCHE",status:"active"}
+];
+let ALIASES=DEMO.map(x=>({...x}));
+let LAST_SOLS=[];
+let MOVE_IDX=null;
+let SELECTED_IDX=null;
+let LAST_MARKS={points:[],lines:[],rays:[],circles:[]};
+let AIM_POINTS=[]; // [{x,y,token,shell}, ...]
+let _selSyncing=false;
+
+function parseCell(s){
+  if(!s) return null;
+  const m=String(s).trim().match(/([A-Ta-t])\s*(10|[1-9])\s*[ ,]?\s*(\d+(?:\.\d+)?)\s*[:/,]\s*(\d+(?:\.\d+)?)/);
+  if(!m) return null;
+  const col=COLS.indexOf(m[1].toUpperCase());
+  const row=+m[2], sx=+m[3], sy=+m[4];
+  if(col<0||row<1||row>10||sx<0||sx>10||sy<0||sy>10) return null;
+  const fmt=v=>{ const n=+v; return (Math.round(n*10)/10).toString(); };
+  return {token:m[1].toUpperCase()+row+" "+fmt(sx)+":"+fmt(sy), col,row,sx,sy, x:col*1000+sx*100, y:(row-1)*1000+sy*100};
+}
+function resolve(s){
+  const raw=String(s||"").trim();
+  if(!raw) return null;
+  const exact=ALIASES.find(a=>a.name.toLowerCase()===raw.toLowerCase());
+  if(exact){
+    const c=parseCell(exact.cell);
+    if(!c) return null;
+    c.alias=exact.name; c.role=exact.role; return c;
+  }
+  return parseCell(raw);
+}
+function cellOf(x,y){
+  if(x<0||y<0||x>20000||y>10000) return {token:"hors carte",x,y};
+  let col=Math.min(19,Math.floor(x/1000));
+  let row=Math.min(10,Math.floor(y/1000)+1);
+  let sx=Math.round((x-col*1000)/10)/10; // 0.1 = 10 m
+  let sy=Math.round((y-(row-1)*1000)/10)/10;
+  if(sx>=10){col=Math.min(19,col+1);sx=0;}
+  if(sy>=10){row=Math.min(10,row+1);sy=0;}
+  const fmt=v=>(Math.round(v*10)/10).toString();
+  return {token:COLS[col]+row+" "+fmt(sx)+":"+fmt(sy),x,y,col,row,sx,sy};
+}
+function azimut(dx,dy){let a=Math.atan2(dx,dy)*180/Math.PI;return a<0?a+360:a;}
+function dir(az){const r=az*Math.PI/180;return {dx:Math.sin(r),dy:Math.cos(r)};}
+function fireFrom(nest,tgt){
+  const dx=tgt.x-nest.x, dy=tgt.y-nest.y;
+  const dist=Math.hypot(dx,dy), km=dist/1000, az=azimut(dx,dy);
+  const cmin=minC(km), mode=$("modeSel").value;
+  const c=cmin?(mode==="max"?6:cmin):null;
+  return {dx,dy,dist,km,az,cmin,c,elev:c?elev(km,c):null,tof:c?tof(km,c):null};
+}
+
+function renderList(){
+  $("aliasList").innerHTML = ALIASES.map((a,i)=>
+    '<div class="al">'+
+    '<span class="chip" data-act="edit" data-i="'+i+'" style="cursor:pointer">'+ROLE[a.role]+'</span> '+
+    '<b data-act="edit" data-i="'+i+'" style="cursor:pointer">'+a.name+'</b> '+
+    '<input class="cell-edit" data-i="'+i+'" value="'+a.cell+'" title="Modifier la case" style="width:92px;display:inline-block;padding:2px 4px;font-size:12px;margin:0 4px">'+
+    '<br>'+
+    '<button class="g s" data-act="edit" data-i="'+i+'">Éditer</button>'+
+    '<button class="g s" data-act="canon" data-i="'+i+'">Iron Nest</button>'+
+    '<button class="g s" data-act="a" data-i="'+i+'">Point A</button>'+
+    '<button class="g s" data-act="b" data-i="'+i+'">Point B</button>'+
+    '<button class="g s" data-act="tgt" data-i="'+i+'">+ Cible</button>'+
+    '<button class="g s" data-act="move" data-i="'+i+'">↕</button>'+
+    '<button class="g s" data-act="del" data-i="'+i+'">x</button>'+
+    '</div>'
+  ).join("") || '<p class="hint">Aucun raccourci.</p>';
+  const nest=resolve($("nest").value);
+  $("canonState").innerHTML = nest
+    ? 'Canon actif : <span class="active">'+(nest.alias||nest.token)+' · '+nest.token+'</span>'
+    : 'Canon : non défini — clique <b>Iron Nest</b> sur un raccourci ou tape B2 1:2';
+  const opts='<option value="">— liste —</option>'+ALIASES.map(a=>'<option value="'+a.name+'">'+a.name+' · '+a.cell+'</option>').join('');
+  document.querySelectorAll("select.pick").forEach(sel=>{
+    const cur=sel.value;
+    sel.innerHTML=opts;
+    if(cur && ALIASES.some(a=>a.name===cur)) sel.value=cur;
+  });
+  const at=$("addTgt");
+  if(at){
+    at.innerHTML='<option value="">+ cible depuis la liste</option>'+ALIASES.map(a=>'<option value="'+a.name+'">'+a.name+' · '+a.cell+'</option>').join('');
+  }
+}
+
+function setCanon(name){
+  // un seul Nest qui tire
+  ALIASES.forEach(a=>{
+    if(a.name===name) a.role="nest";
+    else if(a.role==="nest") a.role="ref";
+  });
+  $("nest").value=name;
+  $("gun").value=name;
+  renderList(); renderTargetBoard(); go();
+}
+function getFiringNest(){
+  const byRole=ALIASES.find(a=>a.role==="nest");
+  if(byRole) return byRole;
+  return ALIASES.find(a=>a.name===$("nest").value||a.name===$("gun").value)||null;
+}
+function isTargetLike(a){
+  return a && (a.role==="target" || a.kind==="infantry"||a.kind==="bunker"||a.kind==="nest"||a.kind==="vehicle"||a.kind==="artillery");
+}
+function statusLabel(s){
+  return s==="neutralized"?"Neutralisé":"Actif";
+}
+function renderTargetBoard(){
+  const box=$("tgtBoardBody");
+  if(!box) return;
+  const nest=getFiringNest();
+  const list=ALIASES.filter(a=>a.role==="target");
+  if(!list.length){
+    box.innerHTML='<p class="hint">Aucune cible (rôle « Cible »).</p>';
+    return;
+  }
+  let html='<p class="hint" style="margin:0 0 6px">Nest tireur : <b class="active">'+(nest?nest.name+" · "+nest.cell:"non défini")+'</b> — tubes Gauche / Droite</p>';
+  html+='<table><thead><tr><th>Ass.</th><th>Tube</th><th>Cible</th><th>Case</th><th>Obus</th><th>Efficacité</th><th>FF</th><th>État</th></tr></thead><tbody>';
+  list.forEach(a=>{
+    const idx=ALIASES.indexOf(a);
+    if(a.assigned===undefined) a.assigned=true;
+    if(!a.tube) a.tube="G";
+    const st=a.status||"active";
+    const shell=a.shell||"HE";
+    const vs=shellVsTarget(shell, a.kind||"unknown");
+    let ff="—", ffClass="tag-ok";
+    if(nest && st==="active" && a.assigned!==false){
+      const c=parseCell(a.cell);
+      if(c){
+        const fr=alliesInBlast(c, shell);
+        if(fr.safeShell){ ff="SAFE"; ffClass="tag-ok"; }
+        else if(fr.unsafe){ ff="UNSAFE"; ffClass="tag-bad"; }
+        else { ff="SAFE"; ffClass="tag-ok"; }
+      }
+    }
+    const vsClass=vs.level==="ok"?"tag-ok":(vs.level==="weak"?"tag-mid":"tag-bad");
+    html+='<tr style="'+(st!=="active"?"opacity:.55":"")+'">';
+    html+='<td><input type="checkbox" data-tb="assign" data-i="'+idx+'" '+(a.assigned!==false?"checked":"")+'></td>';
+    html+='<td><select data-tb="tube" data-i="'+idx+'"><option value="G"'+(a.tube==="G"?" selected":"")+'>G</option><option value="D"'+(a.tube==="D"?" selected":"")+'>D</option></select></td>';
+    html+='<td><b data-act="edit" data-i="'+idx+'" style="cursor:pointer">'+a.name+'</b><br><span class="hint">'+(a.kind||"?")+'</span></td>';
+    html+='<td>'+a.cell+'</td>';
+    html+='<td>'+shell+'</td>';
+    html+='<td><span class="'+vsClass+'" title="'+vs.detail+'">'+vs.tag+'</span></td>';
+    html+='<td><span class="'+ffClass+'">'+ff+'</span></td>';
+    html+='<td><select data-tb="status" data-i="'+idx+'">';
+    html+='<option value="active"'+(st==="active"?" selected":"")+'>Actif</option>';
+    html+='<option value="neutralized"'+(st==="neutralized"?" selected":"")+'>Neutralisé</option>';
+    html+='</select></td></tr>';
+  });
+  html+='</tbody></table>';
+  const alive=list.filter(a=>(a.status||"active")==="active" && a.assigned!==false).length;
+  const neu=list.filter(a=>a.status==="neutralized").length;
+  html+='<p class="hint" style="margin-top:6px">Suivi : <span class="active">'+alive+' actif(s)</span> · '+neu+' neutralisé(s)</p>';
+  box.innerHTML=html;
+}
+
+function onListClick(e){
+  if(e.target.closest("input.cell-edit")) return;
+  const el=e.target.closest("[data-act]");
+  if(!el) return;
+  const i=+el.getAttribute("data-i");
+  const a=ALIASES[i];
+  if(!a) return;
+  const act=el.getAttribute("data-act");
+  if(act==="del"){
+    if(SELECTED_IDX===i) SELECTED_IDX=null;
+    ALIASES.splice(i,1);
+    if(SELECTED_IDX!=null && SELECTED_IDX>i) SELECTED_IDX--;
+    renderList(); syncSelPanel(); go(); return;
+  }
+  if(act==="edit" || act==="move"){
+    if(act==="move") $("mapAction").value="move";
+    selectPoint(i);
+    return;
+  }
+  if(act==="canon"){ setCanon(a.name); selectPoint(i); return; }
+  if(act==="a"){ $("a1").value=a.name; $("b1").value=a.name; $("c1").value=a.name; selectPoint(i); return; }
+  if(act==="b"){ $("a2").value=a.name; $("b2").value=a.name; $("c2").value=a.name; selectPoint(i); return; }
+  if(act==="tgt"){
+    const lines=$("tgts").value.split(/\n/).map(s=>s.trim()).filter(Boolean);
+    if(!lines.includes(a.name)) lines.push(a.name);
+    $("tgts").value=lines.join("\n");
+    selectPoint(i);
+  }
+}
+
+
+function renderAmmoRef(){
+  const box=$("ammoRef"); if(!box) return;
+  let h='<table><thead><tr><th>Obus</th><th>Coût</th><th>Rayon</th><th>Dégâts</th><th>Confirmé</th><th>Effet / usage</th><th>Inf</th><th>Véh</th><th>Art</th><th>Bunker</th><th>Nest</th></tr></thead><tbody>';
+  const mark=v=>v==="ok"?"✓":v==="weak"?"~":"✗";
+  Object.keys(SHELLS).forEach(k=>{
+    const s=SHELLS[k];
+    h+='<tr>';
+    h+='<td><b>'+k+'</b></td>';
+    h+='<td>'+(s.cost==null?"?":s.cost+" rc")+'</td>';
+    h+='<td>'+s.blast+' km</td>';
+    h+='<td>'+(s.dmg?"oui":"non")+'</td>';
+    h+='<td>'+(s.confirmed?"wiki":"hyp.")+'</td>';
+    h+='<td class="hint">'+s.note+'</td>';
+    ["infantry","vehicle","artillery","bunker","nest"].forEach(kk=>{
+      h+='<td>'+mark((s.vs&&s.vs[kk])||"ok")+'</td>';
+    });
+    h+='</tr>';
+  });
+  h+='</tbody></table>';
+  box.innerHTML=h;
+}
+function sessKey(){ return "iron_nest_sessions_v1"; }
+function listSessions(){
+  try{ return JSON.parse(localStorage.getItem(sessKey())||"{}"); }catch(e){ return {}; }
+}
+function refreshSessList(){
+  const sel=$("sessList"); if(!sel) return;
+  const all=listSessions();
+  const names=Object.keys(all).sort();
+  sel.innerHTML='<option value="">— sessions —</option>'+names.map(n=>'<option value="'+n+'">'+n+'</option>').join("");
+}
+function exportState(){
+  return {
+    aliases:ALIASES,
+    nest:$("nest").value,
+    gun:$("gun").value,
+    tgts:$("tgts").value,
+    mode:MODE,
+    charge:$("modeSel").value,
+    aims:AIM_POINTS,
+    a1:$("a1").value,a2:$("a2").value,az1:$("az1").value,az2:$("az2").value,
+    b1:$("b1").value,b2:$("b2").value,baz:$("baz").value,bd:$("bd").value,
+    c1:$("c1").value,c2:$("c2").value,cd1:$("cd1").value,cd2:$("cd2").value
+  };
+}
+function importState(st){
+  if(!st) return;
+  ALIASES=(st.aliases||[]).map(a=>({...a}));
+  AIM_POINTS=st.aims||[];
+  SELECTED_IDX=null; MOVE_IDX=null;
+  if($("nest")) $("nest").value=st.nest||"";
+  if($("gun")) $("gun").value=st.gun||"";
+  if($("tgts")) $("tgts").value=st.tgts||"";
+  if(st.mode) tab(st.mode);
+  if(st.charge) $("modeSel").value=st.charge;
+  ["a1","a2","az1","az2","b1","b2","baz","bd","c1","c2","cd1","cd2"].forEach(id=>{
+    if(st[id]!=null && $(id)) $(id).value=st[id];
+  });
+  renderList(); syncSelPanel(); renderTargetBoard(); evaluateAim(); go();
+}
+function saveSession(){
+  const name=($("sessName").value||"").trim()||("Session "+new Date().toLocaleString());
+  const all=listSessions();
+  all[name]=exportState();
+  localStorage.setItem(sessKey(), JSON.stringify(all));
+  $("sessName").value=name;
+  refreshSessList();
+  $("sessList").value=name;
+  alert("Session « "+name+" » sauvegardée.");
+}
+function loadSession(){
+  const name=$("sessList").value;
+  if(!name){ alert("Choisis une session"); return; }
+  const all=listSessions();
+  if(!all[name]){ alert("Introuvable"); return; }
+  importState(all[name]);
+  $("sessName").value=name;
+}
+function delSession(){
+  const name=$("sessList").value;
+  if(!name) return;
+  if(!confirm("Supprimer « "+name+" » ?")) return;
+  const all=listSessions();
+  delete all[name];
+  localStorage.setItem(sessKey(), JSON.stringify(all));
+  refreshSessList();
+}
+function resetAll(){
+  if(!confirm("Reset complet de la session courante ?")) return;
+  ALIASES=[];
+  AIM_POINTS=[];
+  SELECTED_IDX=null; MOVE_IDX=null; MODE="direct";
+  ["nest","gun","tgts","a1","a2","b1","b2","c1","c2","aimCell","sessName"].forEach(id=>{ if($(id)) $(id).value=""; });
+  tab("direct");
+  renderList(); syncSelPanel(); renderTargetBoard(); evaluateAim();
+  $("res").innerHTML=""; $("kpis").innerHTML=""; $("out").textContent="";
+  draw({points:[],lines:[],rays:[],circles:[]});
+}
+
+function seed(){
+  ALIASES=DEMO.map(x=>({name:x.name,cell:x.cell,role:x.role,kind:x.kind||"unknown",shell:x.shell||"HE",status:x.status||"active",assigned:x.role==="target",tube:x.role==="target"?"G":undefined}));
+  $("nest").value="Iron Nest";
+  $("gun").value="Iron Nest";
+  $("tgts").value="Cible 3";
+  $("a1").value="Observateur 1"; $("a2").value="Alpha";
+  $("b1").value="Observateur 1"; $("b2").value="Alpha";
+  $("c1").value="Observateur 1"; $("c2").value="Alpha";
+  SELECTED_IDX=null; AIM_POINTS=[];
+  if($("aimShell")) fillShellSelect($("aimShell"), "HCHE");
+  renderList(); syncSelPanel(); go();
+}
+
+function addAlias(){
+  const name=$("alName").value.trim();
+  const cell=parseCell($("alCell").value);
+  const role=$("alRole").value;
+  if(!name||!cell){ alert("Nom + case requis. Exemple : Observateur 1 / G3 3:5"); return; }
+  const i=ALIASES.findIndex(a=>a.name.toLowerCase()===name.toLowerCase());
+  const rec={name,cell:cell.token,role};
+  if(i>=0) ALIASES[i]=rec; else ALIASES.push(rec);
+  if(role==="nest") setCanon(name);
+  $("alName").value=""; $("alCell").value="";
+  renderList(); go();
+}
+
+function tab(m){
+  MODE=m;
+  document.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("on", b.getAttribute("data-mode")===m));
+  ["direct","azaz","azd","dd"].forEach(k=>{ $("p-"+k).hidden = k!==m; });
+  go();
+}
+
+function rayRay(A,azA,B,azB){
+  const a=dir(azA), b=dir(azB);
+  const den=a.dx*b.dy-a.dy*b.dx;
+  if(Math.abs(den)<1e-9) return {error:"Rayons parallèles"};
+  const dx=B.x-A.x, dy=B.y-A.y;
+  const t=(dx*b.dy-dy*b.dx)/den, s=(dx*a.dy-dy*a.dx)/den;
+  return {points:[{x:A.x+t*a.dx,y:A.y+t*a.dy}], note:(t<=0||s<=0)?"Intersection derrière un rayon":null};
+}
+function rayCircle(A,az,B,R){
+  const d=dir(az), fx=A.x-B.x, fy=A.y-B.y;
+  const qb=2*(fx*d.dx+fy*d.dy), qc=fx*fx+fy*fy-R*R, disc=qb*qb-4*qc;
+  if(disc<-1e-6) return {error:"Pas d'intersection rayon / cercle"};
+  const s=Math.sqrt(Math.max(0,disc));
+  const ts=[(-qb-s)/2,(-qb+s)/2].filter(t=>t>1);
+  if(!ts.length) return {error:"Intersection derrière le rayon"};
+  return {points:ts.map(t=>({x:A.x+t*d.dx,y:A.y+t*d.dy}))};
+}
+function circleCircle(A,rA,B,rB){
+  const dx=B.x-A.x, dy=B.y-A.y, d=Math.hypot(dx,dy);
+  if(d<1e-6) return {error:"Points confondus"};
+  if(d>rA+rB+1e-6) return {error:"Cercles disjoints"};
+  if(d<Math.abs(rA-rB)-1e-6) return {error:"Un cercle dans l'autre"};
+  const a=(rA*rA-rB*rB+d*d)/(2*d);
+  const h=Math.sqrt(Math.max(0,rA*rA-a*a));
+  const mx=A.x+a*dx/d, my=A.y+a*dy/d, px=-dy/d*h, py=dx/d*h;
+  const pts=[{x:mx+px,y:my+py},{x:mx-px,y:my-py}];
+  return h<1e-4?{points:[pts[0]],note:"Tangence"}:{points:pts,note:"2 solutions — 3e indice nécessaire"};
+}
+function svgEventToMeters(ev){
+  const svg=$("map");
+  const pt=svg.createSVGPoint();
+  pt.x=ev.clientX; pt.y=ev.clientY;
+  const ctm=svg.getScreenCTM();
+  if(!ctm) return null;
+  const p=pt.matrixTransform(ctm.inverse());
+  // viewBox: x = km east, y_svg = 10 - y_km_north
+  const x_m=p.x*1000;
+  const y_m=(10-p.y)*1000;
+  return {x:x_m, y:y_m, sx:p.x, sy:p.y};
+}
+function findNearestAlias(x,y,maxM){
+  maxM=maxM||600;
+  let best=-1, bestD=maxM;
+  ALIASES.forEach((a,i)=>{
+    const c=parseCell(a.cell); if(!c) return;
+    const d=Math.hypot(c.x-x,c.y-y);
+    if(d<bestD){bestD=d;best=i;}
+  });
+  return best;
+}
+function fillShellSelect(sel, current){
+  sel.innerHTML=Object.keys(SHELLS).map(k=>{
+    const s=SHELLS[k];
+    const nd=s.dmg===false?" · 0 dmg":"";
+    return '<option value="'+k+'">'+k+' · R '+s.blast+' km · '+s.cost+'rc'+nd+'</option>';
+  }).join("");
+  if(current && SHELLS[current]) sel.value=current;
+  else sel.value="HE";
+}
+function selectPoint(i){
+  SELECTED_IDX=(i==null||i<0)?null:i;
+  if(SELECTED_IDX!=null) MOVE_IDX=SELECTED_IDX;
+  syncSelPanel();
+  updateMapHint();
+  go();
+  if(SELECTED_IDX!=null){
+    // focus case for keyboard edit after map click
+    setTimeout(function(){ try{ $("selCell").focus(); $("selCell").select(); }catch(e){} }, 0);
+  }
+}
+function syncSelPanel(){
+  const panel=$("selPanel");
+  if(SELECTED_IDX==null || !ALIASES[SELECTED_IDX]){
+    panel.style.display="none";
+    return;
+  }
+  const a=ALIASES[SELECTED_IDX];
+  panel.style.display="block";
+  _selSyncing=true;
+  $("selName").value=a.name||"";
+  $("selCell").value=a.cell||"";
+  $("selRole").value=a.role||"target";
+  $("selKind").value=a.kind||"unknown";
+  fillShellSelect($("selShell"), a.shell||DEFAULT_SHELL[a.kind||"unknown"]||"HE");
+  $("selStatus").value=a.status||"active";
+  _selSyncing=false;
+  const sh=SHELLS[a.shell]||SHELLS.HE;
+  const c=parseCell(a.cell);
+  const roleLabel=ROLE[a.role]||a.role;
+  $("selInfo").textContent=
+    roleLabel+" · "+
+    (c?("XY "+Math.round(c.x)+" / "+Math.round(c.y)+" m · "):"")+
+    "Obus "+(a.shell||"HE")+" · rayon "+sh.blast+" km · "+sh.note+
+    (a.status==="destroyed"?" · DÉTRUIT":"");
+  // titre du panneau selon le type
+  const title=panel.querySelector("div");
+  if(title) title.textContent="Point sélectionné — "+roleLabel+" (« "+a.name+" »)";
+}
+function applySelPanel(){
+  if(_selSyncing || SELECTED_IDX==null || !ALIASES[SELECTED_IDX]) return;
+  const a=ALIASES[SELECTED_IDX];
+  const name=$("selName").value.trim();
+  const cell=parseCell($("selCell").value);
+  if(!name){ alert("Nom requis"); syncSelPanel(); return; }
+  if(!cell){ alert("Case invalide (ex. B3 4:4)"); syncSelPanel(); return; }
+  const oldName=a.name;
+  const oldRole=a.role;
+  a.name=name;
+  a.cell=cell.token;
+  a.role=$("selRole").value;
+  a.kind=$("selKind").value;
+  a.shell=$("selShell").value;
+  a.status=$("selStatus").value;
+  // un seul Nest tireur
+  if(a.role==="nest"){
+    ALIASES.forEach(o=>{ if(o!==a && o.role==="nest") o.role="ref"; });
+    $("nest").value=name;
+    $("gun").value=name;
+  } else if(oldRole==="nest"){
+    // quitte le rôle Nest : on peut repasser obs / cible / ref librement
+    const other=ALIASES.find(o=>o!==a && o.role==="nest");
+    if(!other){
+      // garder le champ nest sur un éventuel autre, sinon vider si c'était lui
+      if($("nest").value===oldName || $("nest").value===name){
+        const fallback=ALIASES.find(o=>o.role==="nest");
+        $("nest").value=fallback?fallback.name:"";
+        $("gun").value=$("nest").value;
+      }
+    }
+  }
+  if(a.role==="target" && a.assigned===undefined) a.assigned=true;
+  ["nest","gun","a1","a2","b1","b2","c1","c2"].forEach(id=>{
+    if($(id).value===oldName) $(id).value=name;
+  });
+  const lines=$("tgts").value.split(/\n/).map(s=>s.trim());
+  let newLines=lines.map(l=>l===oldName?name:l);
+  if(a.role==="target" && !newLines.includes(name)) newLines.push(name);
+  if(a.role!=="target") newLines=newLines.filter(l=>l!==name && l!==oldName);
+  $("tgts").value=newLines.filter(Boolean).join("\n");
+  $("selCell").value=cell.token;
+  const sh=SHELLS[a.shell]||SHELLS.HE;
+  $("selInfo").textContent="XY "+Math.round(cell.x)+" / "+Math.round(cell.y)+" m · "+statusLabel(a.status)+" · Obus "+a.shell+" · R "+sh.blast+" km";
+  renderList();
+  renderTargetBoard();
+  go();
+}
+
+function updateMapHint(){
+  const act=$("mapAction").value;
+  const svg=$("map");
+  const h=$("mapHint");
+  svg.classList.toggle("place-on", act!=="off");
+  if(act==="off"){
+    h.textContent="Clic carte désactivé.";
+    h.classList.remove("on");
+  } else if(act==="move"){
+    if(SELECTED_IDX!=null && ALIASES[SELECTED_IDX]){
+      h.textContent="Déplacer « "+ALIASES[SELECTED_IDX].name+" » : clique sur la nouvelle position (ou près d’un autre point pour le sélectionner).";
+    } else {
+      h.textContent="Mode déplacer : clique près d’un point pour le sélectionner, puis reclique pour le poser.";
+    }
+    h.classList.add("on");
+  } else if(act==="aim"){
+    h.textContent="Point de chute : clique sur la carte pour poser l’impact multi-cibles (rayon de l’obus).";
+    h.classList.add("on");
+  } else {
+    h.textContent="Nouveau point : clique sur la grille. Clic près d’un existant → sélection + édition clavier ci-dessous.";
+    h.classList.add("on");
+  }
+}
+function placeOrMove(x,y){
+  if(x<0||y<0||x>20000||y>10000) return;
+  const cell=cellOf(x,y);
+  if(cell.token==="hors carte") return;
+  const act=$("mapAction").value;
+  if(act==="off") return;
+  if(act==="aim"){
+    const cell=cellOf(x,y);
+    if(cell.token==="hors carte") return;
+    setAimFromCell(cell.token, $("aimShell").value||"HCHE");
+    return;
+  }
+
+  const near=findNearestAlias(x,y,600);
+  if(act==="move"){
+    if(SELECTED_IDX==null){
+      if(near<0){ updateMapHint(); return; }
+      selectPoint(near);
+      return;
+    }
+    ALIASES[SELECTED_IDX].cell=cell.token;
+    if(ALIASES[SELECTED_IDX].role==="nest"){
+      $("nest").value=ALIASES[SELECTED_IDX].name;
+      $("gun").value=ALIASES[SELECTED_IDX].name;
+    }
+    syncSelPanel();
+    go();
+    return;
+  }
+
+  // clic proche d'un point existant (Nest, obs, ref, cible…) = sélection + édition
+  if(near>=0 && !$("mapName").value.trim()){
+    $("mapAction").value="move";
+    selectPoint(near);
+    return;
+  }
+  let name=$("mapName").value.trim();
+  const role=$("mapRole").value;
+  if(!name){
+    let n=1;
+    while(ALIASES.some(a=>a.name==="P"+n)) n++;
+    name="P"+n;
+  }
+  const j=ALIASES.findIndex(a=>a.name.toLowerCase()===name.toLowerCase());
+  const rec={name, cell:cell.token, role, kind:"unknown", shell:DEFAULT_SHELL.unknown||"HE", status:"active"};
+  if(j>=0) Object.assign(ALIASES[j], rec); else ALIASES.push(rec);
+  if(role==="nest") setCanon(name);
+  else if(role==="target"){
+    const lines=$("tgts").value.split(/\n/).map(s=>s.trim()).filter(Boolean);
+    if(!lines.includes(name)){ lines.push(name); $("tgts").value=lines.join("\n"); }
+  }
+  $("mapName").value="";
+  selectPoint(j>=0?j:ALIASES.length-1);
+}
+
+function draw(marks){
+  LAST_MARKS=marks;
+  const svg=$("map");
+  let g="";
+  for(let c=0;c<=20;c++) g+='<line x1="'+c+'" y1="0" x2="'+c+'" y2="10" stroke="#3d3224" stroke-width="0.03"/>';
+  for(let r=0;r<=10;r++) g+='<line x1="0" y1="'+r+'" x2="20" y2="'+r+'" stroke="#3d3224" stroke-width="0.03"/>';
+  for(let c=0;c<20;c++) g+='<text x="'+(c+0.12)+'" y="9.88" fill="#a89068" font-size="0.28">'+COLS[c]+'</text>';
+  for(let r=1;r<=10;r++) g+='<text x="-0.45" y="'+(10-r+0.55)+'" fill="#a89068" font-size="0.28">'+r+'</text>';
+  const xy=p=>[p.x/1000,10-p.y/1000];
+  (marks.lines||[]).forEach(l=>{
+    const A=xy(l.a), B=xy(l.b);
+    g+='<line x1="'+A[0]+'" y1="'+A[1]+'" x2="'+B[0]+'" y2="'+B[1]+'" stroke="#d4a017" stroke-width="0.05"/>';
+  });
+  (marks.rays||[]).forEach(r=>{
+    const d=dir(r.az), L=25000, A=xy(r.p);
+    g+='<line x1="'+A[0]+'" y1="'+A[1]+'" x2="'+((r.p.x+d.dx*L)/1000)+'" y2="'+(10-(r.p.y+d.dy*L)/1000)+'" stroke="'+(r.col||"#d4a017")+'" stroke-width="0.04" stroke-dasharray="0.12 0.08"/>';
+  });
+  (marks.circles||[]).forEach(c=>{
+    const A=xy(c.p);
+    g+='<circle cx="'+A[0]+'" cy="'+A[1]+'" r="'+c.r+'" fill="none" stroke="'+(c.col||"#8aaf5a")+'" stroke-width="0.04" stroke-dasharray="0.14 0.1"/>';
+  });
+  // points de chute multi-cibles
+  AIM_POINTS.forEach((ap,idx)=>{
+    const sh=SHELLS[ap.shell||$("aimShell").value||"HCHE"]||SHELLS.HE;
+    const A=xy(ap);
+    const fr=alliesInBlast(ap, ap.shell||"HCHE");
+    const stroke=fr.unsafe?"#c45c2a":"#d4a017";
+    g+='<circle cx="'+A[0]+'" cy="'+A[1]+'" r="'+sh.blast+'" fill="rgba(212,160,23,0.12)" stroke="'+stroke+'" stroke-width="0.05"/>';
+    g+='<circle cx="'+A[0]+'" cy="'+A[1]+'" r="0.12" fill="'+stroke+'"/>';
+    g+='<text x="'+(A[0]+0.18)+'" y="'+(A[1]-0.12)+'" fill="'+stroke+'" font-size="0.26">I'+(idx+1)+'</text>';
+  });
+    // blast of selected shell
+  if(SELECTED_IDX!=null && ALIASES[SELECTED_IDX]){
+    const sa=ALIASES[SELECTED_IDX];
+    const sc=parseCell(sa.cell);
+    const sh=SHELLS[sa.shell||"HE"]||SHELLS.HE;
+    if(sc && sh.blast){
+      const A=xy(sc);
+      g+='<circle cx="'+A[0]+'" cy="'+A[1]+'" r="'+sh.blast+'" fill="rgba(196,92,42,0.12)" stroke="#c45c2a" stroke-width="0.04" stroke-dasharray="0.1 0.08"/>';
+    }
+  }
+  ALIASES.forEach((a,i)=>{
+    const c=parseCell(a.cell); if(!c) return;
+    const A=xy(c);
+    const sel=SELECTED_IDX===i;
+    let col=a.role==="nest"?"#d4a017":a.role==="target"?"#c45c2a":a.role==="ally"?"#4a9eff":"#8aaf5a";
+    if(a.status==="destroyed"||a.status==="neutralized") col="#666";
+    g+='<circle cx="'+A[0]+'" cy="'+A[1]+'" r="'+(sel?0.22:0.14)+'" fill="'+col+'" stroke="'+(sel?"#fff":"none")+'" stroke-width="0.06" opacity="'+(a.status==="destroyed"||a.status==="neutralized"?0.45:1)+'"/>';
+    g+='<text x="'+(A[0]+0.2)+'" y="'+(A[1]-0.14)+'" fill="'+col+'" font-size="0.28">'+(a.name+(a.status==="destroyed"?" ✕":a.status==="neutralized"?" ○":""))+'</text>';
+  });
+  (marks.points||[]).forEach(p=>{
+    if(p.alias && ALIASES.some(a=>a.name===p.alias)) return;
+    const A=xy(p);
+    g+='<circle cx="'+A[0]+'" cy="'+A[1]+'" r="0.14" fill="'+(p.col||"#ead9b4")+'"/>';
+    g+='<text x="'+(A[0]+0.18)+'" y="'+(A[1]-0.12)+'" fill="'+(p.col||"#ead9b4")+'" font-size="0.28">'+(p.lab||"")+'</text>';
+  });
+  svg.innerHTML=g;
+}
+function saveSol(i, role){
+  const s=LAST_SOLS[i];
+  if(!s||!s.token||s.token==="hors carte"){ alert("Point hors carte"); return; }
+  const inp=document.getElementById("solName"+i);
+  const name=(inp && inp.value.trim()) || s.label || ("Point "+(i+1));
+  const rec={name, cell:s.token, role:role||"target"};
+  const j=ALIASES.findIndex(a=>a.name.toLowerCase()===name.toLowerCase());
+  if(j>=0) ALIASES[j]=rec; else ALIASES.push(rec);
+  renderList(); go();
+}
+function alliesInBlast(aimCell, shellName){
+  const sh=SHELLS[shellName]||SHELLS.HE;
+  // STAR / SMOKE / TEAR GAS : 0 dégâts → toujours SAFE pour les alliés
+  if(sh.dmg===false) return {unsafe:false, hits:[], blast_km:sh.blast, safeShell:true};
+  const R=(sh.blast||0)*1000;
+  const hits=[];
+  ALIASES.forEach(a=>{
+    if(a.role!=="ally") return;
+    if(a.status==="neutralized"||a.status==="destroyed") return;
+    const c=parseCell(a.cell); if(!c) return;
+    const d=Math.hypot(c.x-aimCell.x, c.y-aimCell.y);
+    if(d<=R+1) hits.push({name:a.name, dist_m:Math.round(d), cell:a.cell});
+  });
+  return {unsafe:hits.length>0, hits, blast_km:sh.blast, safeShell:false};
+}
+function evaluateAim(){
+  const box=$("aimResult");
+  if(!box) return null;
+  if(!AIM_POINTS.length){
+    box.innerHTML="Aucun point de chute — mode carte « Point de chute » ou saisie case + Entrée (plusieurs possibles).";
+    return null;
+  }
+  const nest=resolve($("nest").value)||resolve($("gun").value);
+  let html="";
+  AIM_POINTS.forEach((ap,idx)=>{
+    const shell=ap.shell||$("aimShell").value||"HCHE";
+    const sh=SHELLS[shell]||SHELLS.HE;
+    const R=(sh.blast||0)*1000;
+    const covered=[];
+    ALIASES.filter(a=>a.role==="target" && a.assigned!==false && (a.status||"active")==="active").forEach(a=>{
+      const c=parseCell(a.cell); if(!c) return;
+      const d=Math.hypot(c.x-ap.x, c.y-ap.y);
+      const vs=shellVsTarget(shell, a.kind||"unknown");
+      if(d<=R+1) covered.push({name:a.name, dist_m:Math.round(d), vs, kind:a.kind||"unknown"});
+    });
+    const fr=alliesInBlast(ap, shell);
+    let fireTxt="";
+    if(nest){
+      const f=fireFrom(nest, ap);
+      if(f.c) fireTxt="AZ <b>"+f.az.toFixed(1)+"°</b> · "+Math.round(f.dist)+" m · C"+f.c+" · elev "+f.elev.toFixed(2)+"° · ToF "+f.tof.toFixed(1)+"s";
+      else fireTxt="hors portée Nest";
+    }
+    const safeTag=fr.unsafe?'<span class="tag-bad">UNSAFE</span>':'<span class="tag-ok">SAFE</span>';
+    html+="<div style='border-bottom:1px solid #3d3224;padding:6px 0'>";
+    html+="<b>Impact #"+(idx+1)+" "+ap.token+"</b> · "+shell+" · R "+sh.blast+" km "+safeTag;
+    html+=" <button class='g s' type='button' data-aim-del='"+idx+"'>x</button>";
+    html+="<div>"+fireTxt+"</div>";
+    if(fr.safeShell) html+="<div class='hint'>Obus 0 dégât (STAR/SMOKE/TGAS) — alliés SAFE</div>";
+    else if(fr.unsafe) html+="<div style='color:#c45c2a'>alliés: "+fr.hits.map(h=>h.name+"@"+h.dist_m+"m").join(", ")+"</div>";
+    if(covered.length) html+="<div class='active'>"+covered.length+" cible(s): "+covered.map(c=>c.name+" ("+c.dist_m+"m, "+c.vs.tag+")").join("; ")+"</div>";
+    else html+="<div class='hint'>Aucune cible active dans le rayon</div>";
+    const bad=covered.filter(c=>!c.vs.ok);
+    if(bad.length) html+="<div style='color:#c45c2a'>⚠ "+bad.map(c=>c.name+": "+c.vs.detail).join(" · ")+"</div>";
+    html+="</div>";
+  });
+  box.innerHTML=html;
+  return true;
+}
+function setAimFromCell(token, shell){
+  const c=parseCell(token);
+  if(!c){ alert("Case impact invalide"); return; }
+  const sh=shell||$("aimShell").value||"HCHE";
+  AIM_POINTS.push({x:c.x,y:c.y,token:c.token,shell:sh});
+  $("aimCell").value=c.token;
+  evaluateAim();
+  go();
+}
+function clearAims(){
+  AIM_POINTS=[];
+  $("aimCell").value="";
+  evaluateAim();
+  go();
+}
+function row(label,cell,nest,idx){
+  const f=fireFrom(nest,cell);
+  const tok=(cell.alias?cell.alias+" · ":"")+(cell.token||cellOf(cell.x,cell.y).token);
+  const al=cell.alias?ALIASES.find(a=>a.name===cell.alias):null;
+  const shell=(al&&al.shell)||"HE";
+  const sh=SHELLS[shell]||SHELLS.HE;
+  const kind=(al&&al.kind)||"unknown";
+  const dead=al&&(al.status==="destroyed"||al.status==="neutralized");
+  const aim={x:cell.x, y:cell.y};
+  const fr=alliesInBlast(aim, shell);
+  const vs=shellVsTarget(shell, kind);
+  const unsafeTag=fr.unsafe?' <span style="background:#c45c2a;color:#fff;padding:1px 5px;font-size:10px">UNSAFE</span>':' <span style="background:#2a5a2a;color:#cfc;padding:1px 5px;font-size:10px">SAFE</span>';
+  const vsCol=vs.level==="ok"?"#2a5a2a":"#c45c2a";
+  const vsTag=' <span style="background:'+vsCol+';color:#fff;padding:1px 5px;font-size:10px" title="'+vs.detail+'">'+vs.tag+'</span>';
+  const unsafeDetail=fr.unsafe?(" alliés: "+fr.hits.map(h=>h.name+"@"+h.dist_m+"m").join(", ")):" ";
+  const vsDetail=vs.ok?"":(" · ⚠ "+vs.detail);
+  const fire=dead?(al.status==="neutralized"?"NEUTRALISÉ":"DÉTRUIT"):(f.c?("C"+f.c+" · "+f.elev.toFixed(2)+"° · "+f.tof.toFixed(1)+"s · "+shell+" R"+sh.blast+"km"+vsTag+unsafeTag+unsafeDetail+vsDetail):"hors portée");
+  const named = !cell.alias;
+  const save = named
+    ? '<input id="solName'+idx+'" placeholder="Nommer" style="width:110px;display:inline-block"> '+
+      '<button class="g s" type="button" data-save="'+idx+'" data-role="target">Cible</button> '+
+      '<button class="g s" type="button" data-save="'+idx+'" data-role="ref">Réf</button> '+
+      '<button class="g s" type="button" data-save="'+idx+'" data-role="spotter">Obs</button>'
+    : (al?'<button class="g s" type="button" data-pick="'+ALIASES.indexOf(al)+'">Éditer</button>':'—');
+  return {
+    html:"<tr style='"+(dead?"opacity:.5":"")+"'><td>"+label+"</td><td>"+tok+"</td><td>"+Math.round(cell.x)+"/"+Math.round(cell.y)+"</td><td><b>"+f.az.toFixed(1)+"°</b></td><td>"+Math.round(f.dist)+" m</td><td>"+fire+"</td><td>"+save+"</td></tr>",
+    text:label+"  "+tok+"  AZ "+f.az.toFixed(1)+"°  DIST "+Math.round(f.dist)+" m  "+(dead?(al.status==="neutralized"?"NEUTRALISÉ":"DÉTRUIT"):(f.c?("C"+f.c+" "+shell+" R"+sh.blast+"km "+vs.tag+(fr.unsafe?" UNSAFE":" SAFE")+(vs.ok?"":(" | "+vs.detail))):"hors portee")),
+    f, cell, label
+  };
+}
+
+function go(){
+  const marks={points:[],lines:[],rays:[],circles:[]};
+  const rows=[];
+  LAST_SOLS=[];
+  let kpi="";
+  const gun=resolve($("gun").value);
+
+  if(MODE==="direct"){
+    const nest=resolve($("nest").value);
+    if(!nest){
+      $("res").innerHTML='<p class="bad">Canon non défini. Clique <b>Iron Nest</b> sur un raccourci, ou tape B2 1:2 dans le champ Nest.</p>';
+      $("kpis").innerHTML="";
+      renderList();
+      return;
+    }
+    marks.points.push(Object.assign({},nest,{col:"#d4a017",lab:nest.alias||"NEST"}));
+    // cibles : textarea + toutes les cibles assignées au Nest
+    const fromText=$("tgts").value.split(/\n/).map(s=>s.trim()).filter(Boolean);
+    const fromBoard=ALIASES.filter(a=>a.role==="target" && a.assigned!==false).map(a=>a.name);
+    const names=[...new Set(fromText.concat(fromBoard))];
+    names.forEach((line,i)=>{
+      const t=resolve(line);
+      if(!t) return;
+      const al=t.alias?ALIASES.find(a=>a.name===t.alias):null;
+      if(al && al.assigned===false) return;
+      const tube=al&&al.tube==="D"?"DROITE":"GAUCHE";
+      const st=al&&al.status||"active";
+      if(st==="destroyed"||st==="neutralized"){
+        marks.points.push(Object.assign({},t,{col:"#666",lab:(t.alias||("T"+(i+1)))+(st==="destroyed"?" ✕":" ○")}));
+      } else {
+        marks.points.push(Object.assign({},t,{col:"#c45c2a",lab:t.alias||("T"+(i+1))}));
+        marks.lines.push({a:nest,b:t});
+      }
+      const r=row(t.alias||("T"+(i+1)),t,nest,rows.length);
+      if(al && st==="active") r.html=r.html.replace("</td></tr>", " · <b>"+tube+"</b></td></tr>");
+      if(al && st==="active") r.text+="  TUBE "+tube;
+      rows.push(r); LAST_SOLS.push({token:t.token,label:t.alias||("T"+(i+1))});
+    });
+    if(rows[0]) kpi='<div><b>'+rows[0].f.az.toFixed(1)+'°</b>azimut</div><div><b>'+Math.round(rows[0].f.dist)+' m</b>distance</div><div><b>'+(rows[0].f.c?("C"+rows[0].f.c):"—")+'</b>charge</div>';
+  }
+
+  if(MODE==="azaz"){
+    const A=resolve($("a1").value), B=resolve($("a2").value);
+    const az1=+$("az1").value, az2=+$("az2").value;
+    if(!A||!B){ $("res").innerHTML='<p class="bad">Points A et B : nom de raccourci ou case.</p>'; return; }
+    marks.points.push(Object.assign({},A,{col:"#d4a017",lab:A.alias||"A"}), Object.assign({},B,{col:"#8aaf5a",lab:B.alias||"B"}));
+    marks.rays.push({p:A,az:az1},{p:B,az:az2,col:"#8aaf5a"});
+    if(A.x===B.x&&A.y===B.y){ $("res").innerHTML='<p class="bad">Deux azimuts depuis le même point ne localisent pas.</p>'; draw(marks); return; }
+    const r=rayRay(A,az1,B,az2);
+    if(r.error){ $("res").innerHTML='<p class="bad">'+r.error+'</p>'; draw(marks); return; }
+    const nest=gun||A;
+    r.points.forEach((p,i)=>{ const cell=cellOf(p.x,p.y); marks.points.push(Object.assign({},cell,{col:"#c45c2a",lab:"S"+(i+1)})); rows.push(row("S"+(i+1),cell,nest,rows.length)); LAST_SOLS.push({token:cell.token,label:"S"+(i+1)}); });
+    if(r.note) rows.push({html:'<tr><td colspan="7">'+r.note+'</td></tr>',text:r.note});
+  }
+
+  if(MODE==="azd"){
+    const A=resolve($("b1").value), B=resolve($("b2").value);
+    const az=+$("baz").value, dkm=+$("bd").value;
+    if(!A||!B){ $("res").innerHTML='<p class="bad">Points A et B requis.</p>'; return; }
+    marks.points.push(Object.assign({},A,{col:"#d4a017",lab:A.alias||"A"}), Object.assign({},B,{col:"#8aaf5a",lab:B.alias||"B"}));
+    marks.rays.push({p:A,az}); marks.circles.push({p:B,r:dkm,col:"#8aaf5a"});
+    const r=rayCircle(A,az,B,dkm*1000);
+    if(r.error){ $("res").innerHTML='<p class="bad">'+r.error+'</p>'; draw(marks); return; }
+    const nest=gun||A;
+    r.points.forEach((p,i)=>{ const cell=cellOf(p.x,p.y); marks.points.push(Object.assign({},cell,{col:"#c45c2a",lab:"S"+(i+1)})); rows.push(row("S"+(i+1),cell,nest,rows.length)); LAST_SOLS.push({token:cell.token,label:"S"+(i+1)}); });
+  }
+
+  if(MODE==="dd"){
+    const A=resolve($("c1").value), B=resolve($("c2").value);
+    const r1=+$("cd1").value, r2=+$("cd2").value;
+    if(!A||!B){ $("res").innerHTML='<p class="bad">Points A et B requis.</p>'; return; }
+    marks.points.push(Object.assign({},A,{col:"#d4a017",lab:A.alias||"A"}), Object.assign({},B,{col:"#8aaf5a",lab:B.alias||"B"}));
+    marks.circles.push({p:A,r:r1},{p:B,r:r2,col:"#8aaf5a"});
+    const r=circleCircle(A,r1*1000,B,r2*1000);
+    if(r.error){ $("res").innerHTML='<p class="bad">'+r.error+'</p>'; draw(marks); return; }
+    const nest=gun||A;
+    r.points.forEach((p,i)=>{ const cell=cellOf(p.x,p.y); marks.points.push(Object.assign({},cell,{col:"#c45c2a",lab:"S"+(i+1)})); rows.push(row("S"+(i+1),cell,nest,rows.length)); LAST_SOLS.push({token:cell.token,label:"S"+(i+1)}); });
+    if(r.note) rows.push({html:'<tr><td colspan="7">'+r.note+'</td></tr>',text:r.note});
+  }
+
+  $("kpis").innerHTML=kpi;
+  $("res").innerHTML='<table><thead><tr><th>#</th><th>Point</th><th>XY m</th><th>Az</th><th>Dist</th><th>Tir</th><th>Enregistrer</th></tr></thead><tbody>'+rows.map(r=>r.html).join("")+'</tbody></table>';
+  $("out").textContent=rows.map(r=>r.text).join("\n");
+  draw(marks);
+  renderList();
+  renderTargetBoard();
+  if($("aimShell") && !$("aimShell").options.length) fillShellSelect($("aimShell"), "HCHE");
+  evaluateAim();
+}
+
+$("btnAdd").addEventListener("click", addAlias);
+$("btnSeed").addEventListener("click", seed);
+$("btnReset").addEventListener("click", resetAll);
+$("btnSaveSess").addEventListener("click", saveSession);
+$("btnLoadSess").addEventListener("click", loadSession);
+$("btnDelSess").addEventListener("click", delSession);
+$("btnGo").addEventListener("click", go);
+$("btnCopy").addEventListener("click", function(){ navigator.clipboard.writeText($("out").textContent); });
+$("aliasList").addEventListener("click", onListClick);
+$("aliasList").addEventListener("change", function(e){
+  const inp=e.target.closest("input.cell-edit");
+  if(!inp) return;
+  const i=+inp.getAttribute("data-i");
+  if(!ALIASES[i]) return;
+  const cell=parseCell(inp.value);
+  if(!cell){
+    inp.style.borderColor="#c45c2a";
+    alert("Case invalide. Format : A7 8:9 ou B3 4:4");
+    inp.value=ALIASES[i].cell;
+    return;
+  }
+  inp.style.borderColor="";
+  ALIASES[i].cell=cell.token;
+  inp.value=cell.token;
+  if(ALIASES[i].role==="nest"){
+    $("nest").value=ALIASES[i].name;
+    $("gun").value=ALIASES[i].name;
+  }
+  go();
+});
+$("aliasList").addEventListener("keydown", function(e){
+  const inp=e.target.closest("input.cell-edit");
+  if(!inp) return;
+  if(e.key==="Enter"){ e.preventDefault(); inp.blur(); }
+});
+$("res").addEventListener("click", function(e){
+  const pick=e.target.closest("button[data-pick]");
+  if(pick){ selectPoint(+pick.getAttribute("data-pick")); return; }
+  const b=e.target.closest("button[data-save]");
+  if(!b) return;
+  saveSol(+b.getAttribute("data-save"), b.getAttribute("data-role"));
+});
+document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click", function(){ tab(b.getAttribute("data-mode")); }));
+document.querySelectorAll("select.pick").forEach(sel=>{
+  sel.addEventListener("change", function(){
+    if(!sel.value) return;
+    const target=$(sel.getAttribute("data-for"));
+    if(target) target.value=sel.value;
+    go();
+  });
+});
+$("addTgt").addEventListener("change", function(){
+  if(!this.value) return;
+  const lines=$("tgts").value.split(/\n/).map(s=>s.trim()).filter(Boolean);
+  if(!lines.includes(this.value)) lines.push(this.value);
+  $("tgts").value=lines.join("\n");
+  this.value="";
+  go();
+});
+["nest","tgts","gun","a1","a2","az1","az2","b1","b2","baz","bd","c1","c2","cd1","cd2","modeSel"].forEach(id=>{
+  const el=$(id); if(!el) return;
+  el.addEventListener("input", go);
+  el.addEventListener("change", go);
+});
+
+$("btnAimClear").addEventListener("click", function(){ clearAims(); });
+$("aimResult").addEventListener("click", function(e){
+  const b=e.target.closest("[data-aim-del]");
+  if(!b) return;
+  AIM_POINTS.splice(+b.getAttribute("data-aim-del"), 1);
+  evaluateAim(); go();
+});
+$("aimCell").addEventListener("change", function(){ if(this.value.trim()) setAimFromCell(this.value.trim(), $("aimShell").value); });
+$("aimCell").addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); if(this.value.trim()) setAimFromCell(this.value.trim(), $("aimShell").value); }});
+$("aimShell").addEventListener("change", function(){ if(AIM_POINTS.length){ AIM_POINTS.forEach(a=>a.shell=this.value); evaluateAim(); go(); }});
+$("mapAction").addEventListener("change", function(){
+  if(this.value!=="move") MOVE_IDX=null;
+  updateMapHint();
+});
+// Édition clavier du point sélectionné (sous la carte)
+["selName","selCell","selRole","selKind","selShell","selStatus"].forEach(function(id){
+  const el=$(id); if(!el) return;
+  el.addEventListener("change", function(){
+    if(id==="selKind" && !$("selShell").dataset.locked){
+      const def=DEFAULT_SHELL[$("selKind").value]||"HE";
+      fillShellSelect($("selShell"), def);
+    }
+    applySelPanel();
+  });
+  el.addEventListener("keydown", function(e){
+    if(e.key==="Enter"){ e.preventDefault(); this.blur(); applySelPanel(); }
+  });
+});
+$("selShell").addEventListener("change", function(){ this.dataset.locked="1"; });
+$("selKind").addEventListener("change", function(){ $("selShell").dataset.locked=""; });
+let dragging=false;
+let dragMoved=false;
+$("map").addEventListener("mousemove", function(ev){
+  const w=svgEventToMeters(ev);
+  const el=$("mapCoord");
+  if(!w||!el){ if(el) el.textContent="—"; return; }
+  const cell=cellOf(w.x,w.y);
+  el.textContent=cell.token+"  ·  X "+Math.round(w.x)+" m  Y "+Math.round(w.y)+" m";
+});
+$("map").addEventListener("mouseleave", function(){ const el=$("mapCoord"); if(el) el.textContent="—"; });
+$("map").addEventListener("click", function(ev){
+  if(dragMoved){ dragMoved=false; return; }
+  const w=svgEventToMeters(ev);
+  if(!w) return;
+  placeOrMove(w.x, w.y);
+});
+$("map").addEventListener("mousedown", function(ev){
+  if($("mapAction").value==="off" || $("mapAction").value==="aim") return;
+  const w=svgEventToMeters(ev);
+  if(!w) return;
+  const near=findNearestAlias(w.x,w.y,600);
+  if(near>=0){
+    MOVE_IDX=near;
+    $("mapAction").value="move";
+    dragging=true;
+    dragMoved=false;
+    updateMapHint();
+    go();
+    ev.preventDefault();
+  }
+});
+window.addEventListener("mousemove", function(ev){
+  if(!dragging || MOVE_IDX==null) return;
+  const w=svgEventToMeters(ev);
+  if(!w) return;
+  if(w.x<0||w.y<0||w.x>20000||w.y>10000) return;
+  const cell=cellOf(w.x,w.y);
+  if(cell.token==="hors carte") return;
+  ALIASES[MOVE_IDX].cell=cell.token;
+  dragMoved=true;
+  go();
+});
+window.addEventListener("mouseup", function(){
+  if(dragging){
+    dragging=false;
+    if(dragMoved) MOVE_IDX=null;
+    updateMapHint();
+    go();
+  }
+});
+
+updateMapHint();
+renderAmmoRef();
+refreshSessList();
+seed();
+})();
+</script>
+</body>
+</html>
