@@ -1,0 +1,85 @@
+{
+  "_doc": "Table des obus — source de vérité unique. server.py la charge ; iron-nest-core.js en embarque une copie (vérifiée par tests/core.test.js). Valeurs confirmed=true relevées sur ironnestwiki (2026-08-11). confirmed=false = hypothèse communauté / calculateur, non documentée au lancement : coût inconnu (null), rayon et efficacité indicatifs. dmg : 0 = aucun dégât, 1 = dégâts, 2 = pénétrant (touche bunkers / Nest par le souffle). blast_km : rayon d'effet en km. cost : réquisition (rc). vs : efficacité par type de cible (ok / weak / no).",
+  "shells": {
+    "HE": {
+      "dmg": 1, "blast_km": 0.27, "cost": 3, "confirmed": true, "chem": false,
+      "note": "HE standard — infanterie, artillerie, mécanisé",
+      "vs": {"infantry": "ok", "vehicle": "ok", "artillery": "ok", "bunker": "weak", "nest": "weak"}
+    },
+    "HCHE": {
+      "dmg": 1, "blast_km": 0.63, "cost": 5, "confirmed": true, "chem": false,
+      "note": "Haut volume — clusters / formations serrées",
+      "vs": {"infantry": "ok", "vehicle": "ok", "artillery": "ok", "bunker": "weak", "nest": "weak"}
+    },
+    "AP": {
+      "dmg": 2, "blast_km": 0.14, "cost": 3, "confirmed": true, "chem": false,
+      "note": "Pénétration — bunkers, blindés, positions dures",
+      "vs": {"infantry": "weak", "vehicle": "ok", "artillery": "ok", "bunker": "ok", "nest": "ok"}
+    },
+    "STAR": {
+      "dmg": 0, "blast_km": 12.74, "cost": 1, "confirmed": true, "chem": false,
+      "note": "S.T.A.R. illumination — 0 dégât, révèle la carte (nuit / brouillard)",
+      "vs": {"infantry": "no", "vehicle": "no", "artillery": "no", "bunker": "no", "nest": "no"}
+    },
+    "SMK": {
+      "dmg": 0, "blast_km": 1.86, "cost": 1, "confirmed": true, "chem": false,
+      "note": "SMOKE — écran / repli allié, 0 dégât",
+      "vs": {"infantry": "no", "vehicle": "no", "artillery": "no", "bunker": "no", "nest": "no"}
+    },
+    "PHGN": {
+      "dmg": 1, "blast_km": 1.85, "cost": null, "confirmed": false, "chem": true,
+      "note": "PHOSGENE — gaz toxique (infanterie), infrastructures intactes — coût non confirmé",
+      "vs": {"infantry": "ok", "vehicle": "weak", "artillery": "weak", "bunker": "no", "nest": "no"}
+    },
+    "TGAS": {
+      "dmg": 0, "blast_km": 1.86, "cost": null, "confirmed": false, "chem": false,
+      "note": "TEAR GAS — non létal, révèle les cachés — coût non confirmé",
+      "vs": {"infantry": "no", "vehicle": "no", "artillery": "no", "bunker": "no", "nest": "no"}
+    },
+    "APHE": {
+      "dmg": 2, "blast_km": 0.25, "cost": null, "confirmed": false, "chem": false,
+      "note": "AP + souffle (hypothèse)",
+      "vs": {"infantry": "ok", "vehicle": "ok", "artillery": "ok", "bunker": "ok", "nest": "ok"}
+    },
+    "EQKE": {
+      "dmg": 2, "blast_km": 0.55, "cost": null, "confirmed": false, "chem": false,
+      "note": "Burst souterrain retardé (hypothèse)",
+      "vs": {"infantry": "weak", "vehicle": "weak", "artillery": "ok", "bunker": "ok", "nest": "ok"}
+    },
+    "CLMN": {
+      "dmg": 1, "blast_km": 0.5, "cost": null, "confirmed": false, "chem": false,
+      "note": "Sous-munitions (hypothèse)",
+      "vs": {"infantry": "ok", "vehicle": "ok", "artillery": "ok", "bunker": "weak", "nest": "weak"}
+    },
+    "FLCH": {
+      "dmg": 1, "blast_km": 0.62, "cost": null, "confirmed": false, "chem": false,
+      "note": "Fléchettes — infanterie à découvert (hypothèse)",
+      "vs": {"infantry": "ok", "vehicle": "weak", "artillery": "weak", "bunker": "no", "nest": "no"}
+    },
+    "CYAN": {
+      "dmg": 1, "blast_km": 0.75, "cost": null, "confirmed": false, "chem": true,
+      "note": "Cyanogène — pas contre les fortifiés (hypothèse)",
+      "vs": {"infantry": "ok", "vehicle": "weak", "artillery": "weak", "bunker": "no", "nest": "no"}
+    },
+    "INCN": {
+      "dmg": 1, "blast_km": 0.25, "cost": null, "confirmed": false, "chem": false,
+      "note": "Incendiaire (hypothèse)",
+      "vs": {"infantry": "ok", "vehicle": "ok", "artillery": "ok", "bunker": "no", "nest": "no"}
+    },
+    "THRM": {
+      "dmg": 1, "blast_km": 0.35, "cost": null, "confirmed": false, "chem": false,
+      "note": "Thermite (hypothèse)",
+      "vs": {"infantry": "ok", "vehicle": "ok", "artillery": "ok", "bunker": "weak", "nest": "weak"}
+    },
+    "WP": {
+      "dmg": 0, "blast_km": 0.75, "cost": null, "confirmed": false, "chem": false,
+      "note": "Phosphore blanc — écran / harcèlement, 0 dégât modélisé (hypothèse)",
+      "vs": {"infantry": "no", "vehicle": "no", "artillery": "no", "bunker": "no", "nest": "no"}
+    },
+    "LE": {
+      "dmg": 1, "blast_km": 0.15, "cost": null, "confirmed": false, "chem": false,
+      "note": "HE léger / économique (hypothèse)",
+      "vs": {"infantry": "ok", "vehicle": "weak", "artillery": "weak", "bunker": "no", "nest": "no"}
+    }
+  }
+}

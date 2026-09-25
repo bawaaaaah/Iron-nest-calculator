@@ -1,0 +1,111 @@
+{
+  "_doc": "Cas partagés : tests/test_server.py (Python) et tests/core.test.js (JS) vérifient les deux implémentations contre ces attentes. Dans parse_brief, une clé absente de expect n'est pas vérifiée ; error = présence d'une erreur.",
+  "parse_brief": [
+    {"text": "j ai 12 cibles", "expect": []},
+    {"text": "Mission 42", "expect": []},
+    {"text": "Azimut 55.3 distance 12.7", "expect": [{"az": 55.3, "km": 12.7, "label": "", "kind": "unknown", "error": false}]},
+    {"text": "Azimut 55 distance 12.7 mortier", "expect": [{"az": 55, "km": 12.7, "label": "mortier", "kind": "unknown", "error": false}]},
+    {"text": "Azimut 55 distance 12.7km", "expect": [{"az": 55, "km": 12.7, "label": "", "error": false}]},
+    {"text": "Azimut 10 distance 31 km", "expect": [{"az": 10, "km": 31, "error": true}]},
+    {"text": "55,12.7", "expect": [{"az": 55, "km": 12.7, "error": false}]},
+    {"text": "55,3 12,7 infantry", "expect": [{"az": 55.3, "km": 12.7, "kind": "infantry", "error": false}]},
+    {"text": "T1 55.3 12.7", "expect": [{"az": 55.3, "km": 12.7, "error": false}]},
+    {"text": "Azimut 55 - 12.7", "expect": [{"az": 55, "km": 12.7, "error": false}]},
+    {"text": "Azimut 55.3 distance 2700 m", "expect": [{"az": 55.3, "km": 2.7, "error": false}]},
+    {"text": "az 55 2700", "expect": [{"az": 55, "km": 2.7, "error": false}]},
+    {"text": "Azimut 12 distance 45", "expect": [{"az": 12, "error": true}]},
+    {"text": "az=400 5", "expect": [{"error": true}]},
+    {"text": "Azimut 360 distance 5", "expect": [{"az": 0, "km": 5, "error": false}]},
+    {"text": "Azimut 54.2 distance 9.7 Iron nest enemis", "expect": [{"az": 54.2, "km": 9.7, "label": "Iron nest enemis", "kind": "nest", "error": false}]},
+    {"text": "55.3° 12.7 bunker", "expect": [{"az": 55.3, "km": 12.7, "label": "bunker", "kind": "bunker", "error": false}]},
+    {"text": "Cible 2 azimut 55.3 distance 12.7 tank", "expect": [{"az": 55.3, "km": 12.7, "label": "tank", "kind": "vehicle", "error": false}]},
+    {"text": "j ai 5 cibles\r\nAzimut 55.3 distance 12.7\r\n\r\nAzimut 52.3 distance 2.7 bunker", "expect": [
+      {"az": 55.3, "km": 12.7, "label": "", "error": false},
+      {"az": 52.3, "km": 2.7, "label": "bunker", "kind": "bunker", "error": false}
+    ]}
+  ],
+  "classify": [
+    ["Iron nest enemis", "nest"], ["nest", "nest"], ["bunker", "bunker"], ["armor", "bunker"], ["fantassin", "infantry"],
+    ["artillery battery", "artillery"], ["tank", "vehicle"], ["smoke", "smoke"], ["illum", "illum"], ["rien", "unknown"]
+  ],
+  "normalize_kind": [
+    ["nest", "nest"], ["NEST", "nest"], ["hard", "bunker"], ["infantry", "infantry"], ["smoke", "smoke"], ["tank", "vehicle"], ["", "unknown"]
+  ],
+  "pick_shell": [
+    ["bunker", "auto", false, "AP"], ["nest", "auto", true, "APHE"], ["infantry", "auto", false, "HCHE"],
+    ["infantry", "chem", false, "PHGN"], ["artillery", "auto", false, "HE"], ["artillery", "auto", true, "HCHE"],
+    ["vehicle", "eco", false, "HE"], ["vehicle", "auto", true, "HE"], ["unknown", "eco", false, "LE"],
+    ["unknown", "auto", true, "HCHE"], ["smoke", "auto", false, "SMK"], ["illum", "auto", false, "STAR"], ["bunker", "he", false, "HE"]
+  ],
+  "min_charge": [[0, null], [-1, null], [0.1, 1], [5, 1], [5.01, 2], [10, 2], [15, 3], [29.99, 6], [30, 6], [30.01, null]],
+  "ballistics": [
+    {"km": 20, "charges": 1, "error": true},
+    {"km": 20, "charges": null, "charge": 4, "elev": 60, "tof": 40},
+    {"km": 12.7, "charges": 6, "charge": 6, "elev": 25.4, "tof": 18.142857},
+    {"km": 12.7, "charges": 7, "error": true},
+    {"km": 0, "charges": null, "error": true},
+    {"km": 31, "charges": 6, "error": true}
+  ],
+  "parse_cell": [
+    ["B2 1:2", {"token": "B2 1:2", "x": 1100, "y": 1200}],
+    ["A1 0.1:0.7", {"token": "A1 0.1:0.7", "x": 10, "y": 70}],
+    ["t10 10:10", {"token": "T10 10:10", "x": 20000, "y": 10000}],
+    ["C5 4.25:6", {"token": "C5 4.3:6", "x": 2430, "y": 4600}],
+    ["Nest en B2,1,2", {"token": "B2 1:2", "x": 1100, "y": 1200}],
+    ["Cible 3 4:5", null], ["U1 1:1", null], ["A11 1:1", null], ["A1 11:1", null], ["", null]
+  ],
+  "cell_of": [
+    [1100, 1200, "B2 1:2"], [19960, 5000, "T6 9.6:0"], [19996, 5000, "T6 10:0"], [5000, 10000, "F10 0:10"],
+    [1999.6, 0, "C1 0:0"], [0, 0, "A1 0:0"], [-1, 0, "hors carte"], [20001, 0, "hors carte"]
+  ],
+  "multi_kill": [
+    {"brief": "Azimut 0 distance 10 infantry\nAzimut 4 distance 10 infantry\nAzimut 2 distance 10.6 infantry", "pref": "auto", "top": {"shell": "HCHE", "covers": [1, 2, 3]}},
+    {"brief": "Azimut 0 distance 10 infantry\nAzimut 1 distance 10 infantry", "pref": "auto", "top": {"shell": "HE", "covers": [1, 2]}},
+    {"brief": "Azimut 0 distance 10 infantry\nAzimut 1 distance 10 infantry", "pref": "chem", "top": {"shell": "HE", "covers": [1, 2]}},
+    {"brief": "Azimut 0 distance 10 bunker\nAzimut 1 distance 10 bunker", "pref": "auto", "top": {"shell": "APHE", "covers": [1, 2]}},
+    {"brief": "Azimut 0 distance 10\nAzimut 90 distance 10", "pref": "auto", "top": null},
+    {"brief": "Azimut 0 distance 10\nAzimut 1 distance 45 km", "pref": "auto", "top": null}
+  ],
+  "solve": [
+    {
+      "brief": "Azimut 55.3 distance 12.7\nAzimut 54.2 distance 9.7 Iron nest enemis\nAzimut 59.3 distance 8.7\nAzimut 52.3 distance 2.7 bunker\nAzimut 51.3 distance 22.7 infantry",
+      "mode": "max", "pref": "auto",
+      "fire_order": [2, 4, 5, 3, 1],
+      "tubes": {"2": "GAUCHE", "4": "DROITE", "5": "GAUCHE", "3": "DROITE", "1": "GAUCHE"},
+      "shells": {"1": "HE", "2": "AP", "3": "HE", "4": "AP", "5": "HCHE"},
+      "charges": {"1": 6, "2": 6, "3": 6, "4": 6, "5": 6},
+      "cost": 17, "unknown_cost": 0,
+      "dual": [[1, 2], [2, 4], [4, 5]]
+    },
+    {
+      "brief": "Azimut 55.3 distance 12.7\nAzimut 54.2 distance 9.7 Iron nest enemis\nAzimut 59.3 distance 8.7\nAzimut 52.3 distance 2.7 bunker\nAzimut 51.3 distance 22.7 infantry",
+      "mode": "min", "pref": "auto",
+      "charges": {"1": 3, "2": 2, "3": 2, "4": 1, "5": 5}
+    },
+    {
+      "brief": "Azimut 10 distance 31 km\nAzimut 20 distance 5 bunker",
+      "mode": "max", "pref": "eco",
+      "fire_order": [2], "errors": [1], "tubes": {"2": "GAUCHE"}
+    },
+    {
+      "brief": "Azimut 10 distance 5\nAzimut 11 distance 5.1",
+      "mode": "max", "pref": "auto",
+      "shells": {"1": "HCHE", "2": "HCHE"}, "cost": 10, "unknown_cost": 0
+    },
+    {
+      "brief": "Azimut 10 distance 5\nAzimut 90 distance 5.1",
+      "mode": "max", "pref": "eco",
+      "shells": {"1": "LE", "2": "LE"}, "cost": 0, "unknown_cost": 2
+    }
+  ],
+  "triangulate": [
+    {"mode": "two_azimuths", "a": "A1 0:0", "b": "C1 0:0", "p1": 45, "p2": 315, "points": ["B2 0:0"]},
+    {"mode": "two_azimuths", "a": "A1 0:0", "b": "C1 0:0", "p1": 90, "p2": 90, "error": true},
+    {"mode": "two_azimuths", "a": "A1 0:0", "b": "A1 0:0", "p1": 10, "p2": 80, "error": true},
+    {"mode": "az_dist", "a": "A1 0:0", "b": "B1 0:5", "p1": 90, "p2": 0.5, "points": ["B1 0:0"], "note": "tangence"},
+    {"mode": "az_dist", "a": "A1 0:0", "b": "C1 0:0", "p1": 90, "p2": 1, "points": ["B1 0:0", "D1 0:0"]},
+    {"mode": "az_dist", "a": "A1 0:0", "b": "C3 0:0", "p1": 90, "p2": 1, "error": true},
+    {"mode": "two_distances", "a": "B2 0:0", "b": "D2 0:0", "p1": 1.4142135623730951, "p2": 1.4142135623730951, "points": ["C3 0:0", "C1 0:0"]},
+    {"mode": "two_distances", "a": "B2 0:0", "b": "D2 0:0", "p1": 0.5, "p2": 0.5, "error": true}
+  ]
+}
