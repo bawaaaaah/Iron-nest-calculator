@@ -1,0 +1,38 @@
+# --- Python (serveur MCP, tests) ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- Node (tests, outils éventuels) ---
+node_modules/
+npm-debug.log*
+coverage/
+
+# --- Tests navigateur (Playwright) ---
+test-results/
+playwright-report/
+
+# --- Config locale ---
+# Config MCP réelle de chaque machine (chemins absolus) ; le fragment d'exemple reste versionné.
+claude_desktop_config.json
+# Réglages personnels Claude Code
+.claude/settings.local.json
+# Secrets
+.env
+.env.*
+
+# --- Éditeurs / OS ---
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
