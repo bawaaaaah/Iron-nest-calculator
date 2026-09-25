@@ -13,7 +13,7 @@ h1{margin:0;font-size:15px;letter-spacing:.12em;text-transform:uppercase}
 small{color:var(--m)}
 main{display:grid;grid-template-columns:380px 1fr;gap:10px;padding:10px}
 @media(max-width:980px){main{grid-template-columns:1fr}}
-section{background:var(--p);border:1px solid var(--l);padding:10px}
+section{background:var(--p);border:1px solid var(--l);padding:10px;min-width:0}
 h2{margin:0 0 8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--a)}
 input,select,button,textarea{font-family:inherit;font-size:13px}
 input,select,textarea{background:#100c08;color:var(--ink);border:1px solid var(--l);padding:6px 8px;width:100%}
@@ -28,7 +28,7 @@ button.s{padding:3px 7px;font-size:10px;margin:0 2px 0 0}
 .kpi{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
 .kpi div{border:1px solid var(--l);padding:6px 8px;font-size:11px}
 .kpi b{display:block;color:var(--a);font-size:18px}
-svg{width:100%;background:#100c08;border:1px solid var(--l);cursor:crosshair;touch-action:none}
+svg{display:block;width:100%;background:#100c08;border:1px solid var(--l);cursor:crosshair;touch-action:none;user-select:none}
 svg.place-on{outline:1px solid var(--a)}
 #mapHint{font-size:11px;color:var(--m);margin:4px 0 8px}
 #mapHint.on{color:var(--a)}
@@ -43,26 +43,27 @@ th{color:var(--m);font-size:10px;text-transform:uppercase}
 .chip{border:1px solid var(--l);padding:1px 5px;font-size:10px;color:var(--a)}
 .out{background:#100c08;border:1px dashed var(--a);padding:8px;white-space:pre-wrap;font-size:12px;margin-top:8px}
 .active{color:var(--a)}
+.box{border:1px solid var(--l);padding:8px;margin:6px 0;background:#100c08}
+.box-title{font-size:11px;color:var(--a);margin-bottom:6px;letter-spacing:.1em;text-transform:uppercase}
 #mapWrap{position:relative}
 #mapCoord{position:absolute;bottom:8px;left:10px;background:rgba(16,12,8,.9);border:1px solid var(--l);padding:4px 8px;font-size:11px;color:var(--a);pointer-events:none}
 .tag-ok{background:#2a5a2a;color:#cfc;padding:1px 5px;font-size:10px}
 .tag-bad{background:#c45c2a;color:#fff;padding:1px 5px;font-size:10px}
 .tag-mid{background:#6a5a20;color:#fc6;padding:1px 5px;font-size:10px}
-
 </style>
 </head>
 <body>
 <header>
   <h1>Iron Nest · Grille & triangulation</h1>
-  <small>A1–T10 · subdivisions décimales · 0° = Nord · wiki v1.0</small>
+  <small>A1–T10 · subdivisions décimales · 0° = Nord · ligne 1 au sud · wiki v1.0</small>
 </header>
 <main>
 <section>
   <h2>Raccourcis</h2>
   <div class="row3">
-    <div><label>Nom</label><input id="alName" placeholder="Observateur 1"></div>
-    <div><label>Case</label><input id="alCell" placeholder="G3 3:5"></div>
-    <div><label>Rôle</label>
+    <div><label for="alName">Nom</label><input id="alName" placeholder="Observateur 1"></div>
+    <div><label for="alCell">Case</label><input id="alCell" placeholder="G3 3:5"></div>
+    <div><label for="alRole">Rôle</label>
       <select id="alRole">
         <option value="spotter">Observateur</option>
         <option value="ref">Référence</option>
@@ -78,9 +79,9 @@ th{color:var(--m);font-size:10px;text-transform:uppercase}
     <button class="g s" type="button" id="btnReset">Reset</button>
   </div>
   <div class="row3" style="margin-bottom:8px">
-    <div><label>Session</label><input id="sessName" placeholder="Mission 1"></div>
-    <div><label> </label><button type="button" class="g" id="btnSaveSess">Sauver</button></div>
-    <div><label>Charger</label><select id="sessList"></select></div>
+    <div><label for="sessName">Session</label><input id="sessName" placeholder="Mission 1"></div>
+    <div><label>&nbsp;</label><button type="button" class="g" id="btnSaveSess">Sauver</button></div>
+    <div><label for="sessList">Charger</label><select id="sessList"></select></div>
   </div>
   <div style="margin-bottom:8px">
     <button class="g s" type="button" id="btnLoadSess">Charger</button>
@@ -90,6 +91,8 @@ th{color:var(--m);font-size:10px;text-transform:uppercase}
   <p class="hint" id="canonState">Canon : non défini</p>
 
   <h2 style="margin-top:14px">Calcul</h2>
+  <label for="nest">Canon / Nest (tireur, tous modes)</label>
+  <div class="combo"><input id="nest" placeholder="Iron Nest ou B2 1:2"><select class="pick" data-for="nest" aria-label="Choisir le canon"></select></div>
   <div class="tabs">
     <button type="button" data-mode="direct" class="on">Nest → cible</button>
     <button type="button" data-mode="azaz">2 azimuts</button>
@@ -98,40 +101,36 @@ th{color:var(--m);font-size:10px;text-transform:uppercase}
   </div>
 
   <div id="p-direct">
-    <label>Canon / Nest</label>
-    <div class="combo"><input id="nest" placeholder="Iron Nest ou B2 1:2"><select class="pick" data-for="nest"></select></div>
-    <label>Cibles (noms ou cases, une par ligne)</label>
+    <label for="tgts">Cibles (noms ou cases, une par ligne)</label>
     <textarea id="tgts" placeholder="Cible 3">Cible 3</textarea>
-    <label>Ajouter une cible depuis la liste</label>
+    <label for="addTgt">Ajouter une cible depuis la liste</label>
     <select id="addTgt"></select>
   </div>
   <div id="p-azaz" hidden>
-    <label>Point A</label>
-    <div class="combo"><input id="a1" placeholder="Observateur 1"><select class="pick" data-for="a1"></select></div>
-    <label>Azimut A (°)</label><input id="az1" type="number" step="0.1" value="21.1">
-    <label>Point B</label>
-    <div class="combo"><input id="a2" placeholder="Alpha"><select class="pick" data-for="a2"></select></div>
-    <label>Azimut B (°)</label><input id="az2" type="number" step="0.1" value="320">
+    <label for="a1">Point A</label>
+    <div class="combo"><input id="a1" placeholder="Observateur 1"><select class="pick" data-for="a1" aria-label="Choisir le point A"></select></div>
+    <label for="az1">Azimut A (°)</label><input id="az1" type="number" step="0.1" value="21.1">
+    <label for="a2">Point B</label>
+    <div class="combo"><input id="a2" placeholder="Alpha"><select class="pick" data-for="a2" aria-label="Choisir le point B"></select></div>
+    <label for="az2">Azimut B (°)</label><input id="az2" type="number" step="0.1" value="320">
   </div>
   <div id="p-azd" hidden>
-    <label>Point A (azimut)</label>
-    <div class="combo"><input id="b1" placeholder="Observateur 1"><select class="pick" data-for="b1"></select></div>
-    <label>Azimut A (°)</label><input id="baz" type="number" step="0.1" value="45">
-    <label>Point B (distance)</label>
-    <div class="combo"><input id="b2" placeholder="Alpha"><select class="pick" data-for="b2"></select></div>
-    <label>Distance B (km)</label><input id="bd" type="number" step="0.01" value="6.5">
+    <label for="b1">Point A (azimut)</label>
+    <div class="combo"><input id="b1" placeholder="Observateur 1"><select class="pick" data-for="b1" aria-label="Choisir le point A"></select></div>
+    <label for="baz">Azimut A (°)</label><input id="baz" type="number" step="0.1" value="45">
+    <label for="b2">Point B (distance)</label>
+    <div class="combo"><input id="b2" placeholder="Alpha"><select class="pick" data-for="b2" aria-label="Choisir le point B"></select></div>
+    <label for="bd">Distance B (km)</label><input id="bd" type="number" step="0.01" value="6.5">
   </div>
   <div id="p-dd" hidden>
-    <label>Point A</label>
-    <div class="combo"><input id="c1" placeholder="Observateur 1"><select class="pick" data-for="c1"></select></div>
-    <label>Distance A (km)</label><input id="cd1" type="number" step="0.01" value="4">
-    <label>Point B</label>
-    <div class="combo"><input id="c2" placeholder="Alpha"><select class="pick" data-for="c2"></select></div>
-    <label>Distance B (km)</label><input id="cd2" type="number" step="0.01" value="7">
+    <label for="c1">Point A</label>
+    <div class="combo"><input id="c1" placeholder="Observateur 1"><select class="pick" data-for="c1" aria-label="Choisir le point A"></select></div>
+    <label for="cd1">Distance A (km)</label><input id="cd1" type="number" step="0.01" value="4">
+    <label for="c2">Point B</label>
+    <div class="combo"><input id="c2" placeholder="Alpha"><select class="pick" data-for="c2" aria-label="Choisir le point B"></select></div>
+    <label for="cd2">Distance B (km)</label><input id="cd2" type="number" step="0.01" value="7">
   </div>
-  <label>Nest pour le tir</label>
-  <div class="combo"><input id="gun" placeholder="Iron Nest"><select class="pick" data-for="gun"></select></div>
-  <label>Charges</label>
+  <label for="modeSel">Charges</label>
   <select id="modeSel">
     <option value="min">Charge mini</option>
     <option value="max">C6 (ToF court)</option>
@@ -145,7 +144,7 @@ th{color:var(--m);font-size:10px;text-transform:uppercase}
   <h2>Carte + solution</h2>
   <div class="row3" style="margin-bottom:6px">
     <div>
-      <label>Clic carte →</label>
+      <label for="mapAction">Clic carte →</label>
       <select id="mapAction">
         <option value="new">Nouveau point</option>
         <option value="move">Déplacer un point</option>
@@ -154,11 +153,11 @@ th{color:var(--m);font-size:10px;text-transform:uppercase}
       </select>
     </div>
     <div>
-      <label>Nom (nouveau)</label>
+      <label for="mapName">Nom (nouveau)</label>
       <input id="mapName" placeholder="Bravo">
     </div>
     <div>
-      <label>Rôle</label>
+      <label for="mapRole">Rôle</label>
       <select id="mapRole">
         <option value="target">Cible</option>
         <option value="ally">Allié</option>
@@ -168,13 +167,17 @@ th{color:var(--m);font-size:10px;text-transform:uppercase}
       </select>
     </div>
   </div>
-  <p id="mapHint">Clic sur la grille pour placer un point. Clic près d’un point existant pour le sélectionner / déplacer.</p>
-  <div id="selPanel" style="display:none;border:1px solid var(--l);padding:8px;margin:6px 0;background:#100c08">
-    <div style="font-size:11px;color:var(--a);margin-bottom:6px;letter-spacing:.1em;text-transform:uppercase">Point sélectionné</div>
+  <p id="mapHint"></p>
+  <div id="mapWrap">
+    <svg id="map" viewBox="-0.6 -0.6 21.2 11.2" aria-label="Carte A1–T10"></svg>
+    <div id="mapCoord">—</div>
+  </div>
+  <div id="selPanel" class="box" style="display:none">
+    <div class="box-title" id="selTitle">Point sélectionné</div>
     <div class="row3">
-      <div><label>Nom</label><input id="selName"></div>
-      <div><label>Case</label><input id="selCell" placeholder="B3 4:4"></div>
-      <div><label>Type / rôle</label>
+      <div><label for="selName">Nom</label><input id="selName"></div>
+      <div><label for="selCell">Case</label><input id="selCell" placeholder="B3 4:4"></div>
+      <div><label for="selRole">Type / rôle</label>
         <select id="selRole">
           <option value="target">Cible</option>
           <option value="ally">Allié</option>
@@ -185,7 +188,7 @@ th{color:var(--m);font-size:10px;text-transform:uppercase}
       </div>
     </div>
     <div class="row3" style="margin-top:4px">
-      <div><label>Kind cible</label>
+      <div><label for="selKind">Type de cible</label>
         <select id="selKind">
           <option value="unknown">Inconnu</option>
           <option value="infantry">Infanterie</option>
@@ -195,8 +198,8 @@ th{color:var(--m);font-size:10px;text-transform:uppercase}
           <option value="artillery">Artillerie</option>
         </select>
       </div>
-      <div><label>Obus</label><select id="selShell"></select></div>
-      <div><label>État</label>
+      <div><label for="selShell">Obus</label><select id="selShell"></select></div>
+      <div><label for="selStatus">État</label>
         <select id="selStatus">
           <option value="active">Actif</option>
           <option value="neutralized">Neutralisé</option>
@@ -205,323 +208,261 @@ th{color:var(--m);font-size:10px;text-transform:uppercase}
     </div>
     <p class="hint" id="selInfo" style="margin-top:6px"></p>
   </div>
-  <div id="tgtBoard" style="border:1px solid var(--l);padding:8px;margin:6px 0;background:#100c08">
-    <div style="font-size:11px;color:var(--a);margin-bottom:6px;letter-spacing:.1em;text-transform:uppercase">Tableau de bord — cibles du Nest</div>
-    <p class="hint">Un seul Nest tire. 2 tubes : Gauche / Droite. Coche les cibles assignées, change l’état pour le suivi.</p>
-    <div id="tgtBoardBody"></div>
-  </div>
+  <div class="kpi" id="kpis"></div>
+  <div id="res"></div>
+  <div class="out" id="out"></div>
 
-  <div id="aimPanel" style="border:1px solid var(--l);padding:8px;margin:6px 0;background:#100c08">
-    <div style="font-size:11px;color:var(--a);margin-bottom:6px;letter-spacing:.1em;text-transform:uppercase">Point de chute (multi-cibles)</div>
-    <p class="hint">Place un impact pour couvrir plusieurs cibles dans le rayon de l’obus. Mode carte : « Point de chute ».</p>
+  <div id="aimPanel" class="box">
+    <div class="box-title">Point de chute (multi-cibles)</div>
+    <p class="hint">Place un impact pour couvrir plusieurs cibles dans le rayon de l'obus : mode carte « Point de chute », ou case + Entrée / Ajouter.</p>
     <div class="row3">
-      <div><label>Case impact</label><input id="aimCell" placeholder="C4 2:5"></div>
-      <div><label>Obus impact</label><select id="aimShell"></select></div>
-      <div><label> </label><button type="button" class="g" id="btnAimClear">Effacer impact</button></div>
+      <div><label for="aimCell">Case impact</label><input id="aimCell" placeholder="C4 2:5"></div>
+      <div><label for="aimShell">Obus impact</label><select id="aimShell"></select></div>
+      <div><label>&nbsp;</label><button type="button" class="g s" id="btnAimAdd">Ajouter</button><button type="button" class="g s" id="btnAimClear">Tout effacer</button></div>
     </div>
     <div id="aimResult" class="hint" style="margin-top:6px"></div>
   </div>
-  <div class="kpi" id="kpis"></div>
-  <svg id="map" viewBox="-0.6 -0.6 21.2 11.2"></svg>
-  <div id="res"></div>
-  <div class="out" id="out"></div>
+  <div id="tgtBoard" class="box">
+    <div class="box-title">Tableau de bord — cibles du Nest</div>
+    <p class="hint">Un seul Nest tire. 2 tubes : Gauche / Droite. Coche les cibles assignées, change l'état pour le suivi. SAFE / UNSAFE : alliés, observateurs et Nest dans le rayon de l'obus.</p>
+    <div id="tgtBoardBody"></div>
+  </div>
 </section>
 <section style="grid-column:1/-1">
-  <h2>Référence obus (wiki Iron Nest · 7 confirmés au lancement)</h2>
-  <div id="ammoRef"></div>
-  <p class="hint">Sources : ironnestwiki — HE 0.27 km / 3 rc · HCHE 0.63 km / 5 rc · AP 0.14 km / 3 rc · STAR illumination 12.74 km / 1 rc (0 dmg) · SMOKE 1.86 km / 1 rc (0 dmg, écran) · PHOSGENE ~1.85 km (infanterie) · TEAR GAS ~1.86 km (non-létal). Autres types = hypothèses communauté / non confirmés.</p>
+  <h2>Référence obus (wiki Iron Nest · confirmés au lancement + hypothèses)</h2>
+  <div id="ammoRef" style="overflow:auto"></div>
+  <p class="hint">Sources : ironnestwiki — HE 0.27 km / 3 rc · HCHE 0.63 km / 5 rc · AP 0.14 km / 3 rc · STAR illumination 12.74 km / 1 rc (0 dmg) · SMOKE 1.86 km / 1 rc (0 dmg, écran) · PHOSGENE ~1.85 km (infanterie) · TEAR GAS ~1.86 km (non létal). Autres types = hypothèses communauté / non confirmés (coût inconnu). Table unique : iron-nest-mcp/ammo.json.</p>
 </section>
 </main>
+<script src="iron-nest-core.js"></script>
 <script>
 (function(){
-const COLS="ABCDEFGHIJKLMNOPQRST";
-const SPEEDS={1:0.21,2:0.31,3:0.41,4:0.50,5:0.60,6:0.70};
-const ROLE={spotter:"Observateur",ref:"Référence",nest:"Iron Nest",target:"Cible",ally:"Allié"};
-const SHELLS={
-  // Confirmés wiki (2026-08-11)
-  HE:{blast:0.27,cost:3,dmg:true,confirmed:true,note:"HE standard — infanterie, artillerie, mécanisé",vs:{infantry:"ok",vehicle:"ok",artillery:"ok",bunker:"weak",nest:"weak",unknown:"ok"}},
-  HCHE:{blast:0.63,cost:5,dmg:true,confirmed:true,note:"Haut volume — clusters / formations serrées",vs:{infantry:"ok",vehicle:"ok",artillery:"ok",bunker:"weak",nest:"weak",unknown:"ok"}},
-  AP:{blast:0.14,cost:3,dmg:true,confirmed:true,note:"Pénétration — bunkers, blindés, positions dures",vs:{infantry:"weak",vehicle:"ok",artillery:"ok",bunker:"ok",nest:"ok",unknown:"ok"}},
-  STAR:{blast:12.74,cost:1,dmg:false,confirmed:true,note:"S.T.A.R. illumination — 0 dégât, révèle la map (nuit/brouillard)",vs:{infantry:"no",vehicle:"no",artillery:"no",bunker:"no",nest:"no",unknown:"no"}},
-  SMK:{blast:1.86,cost:1,dmg:false,confirmed:true,note:"SMOKE — écran / retrait alliés, 0 dégât",vs:{infantry:"no",vehicle:"no",artillery:"no",bunker:"no",nest:"no",unknown:"no"}},
-  PHGN:{blast:1.85,cost:null,dmg:true,confirmed:false,note:"PHOSGENE — gaz toxique (infanterie), infra intacte — coût non confirmé",vs:{infantry:"ok",vehicle:"weak",artillery:"weak",bunker:"no",nest:"no",unknown:"ok"}},
-  TGAS:{blast:1.86,cost:null,dmg:false,confirmed:false,note:"TEAR GAS — non-létal / foule — coût non confirmé",vs:{infantry:"no",vehicle:"no",artillery:"no",bunker:"no",nest:"no",unknown:"no"}},
-  // Non documentés au lancement (hypothèses calculateur)
-  APHE:{blast:0.25,cost:15,dmg:true,confirmed:false,note:"AP+HE (non confirmé wiki)",vs:{infantry:"ok",vehicle:"ok",artillery:"ok",bunker:"ok",nest:"ok",unknown:"ok"}},
-  LE:{blast:0.15,cost:8,dmg:true,confirmed:false,note:"HE léger (non confirmé)",vs:{infantry:"ok",vehicle:"weak",artillery:"weak",bunker:"no",nest:"no",unknown:"ok"}}
-};
-const DEFAULT_SHELL={unknown:"HE",infantry:"HCHE",bunker:"AP",nest:"AP",vehicle:"HE",artillery:"HCHE"};
-function shellVsTarget(shellName, kind){
-  const sh=SHELLS[shellName]||SHELLS.HE;
-  const k=kind||"unknown";
-  if(sh.dmg===false){
-    const det=shellName==="STAR"?"STAR = illumination / révélation map, 0 dégât (SAFE alliés)":shellName==="SMK"||shellName==="TGAS"?"Écran / non-létal — 0 dégât, SAFE alliés (permet déplacement)":(sh.note||"Pas de dégâts");
-    return {ok:false, level:"no", tag:"NO DMG", detail:det};
-  }
-  const level=(sh.vs&&sh.vs[k])||"ok";
-  if(level==="ok") return {ok:true, level:"ok", tag:"OK", detail:"Obus adapté"};
-  if(level==="weak") return {ok:false, level:"weak", tag:"FAIBLE", detail:"Peu efficace vs "+k+" — risque de ne pas détruire"};
-  return {ok:false, level:"no", tag:"INEFFICACE", detail:"Obus incapable de détruire une cible "+k};
-}
+"use strict";
 const $=id=>document.getElementById(id);
-const minC=km=>km<=0||km>30?null:Math.max(1,Math.min(6,Math.ceil(km/5)));
-const elev=(km,c)=>12*km/c;
-const tof=(km,c)=>km/SPEEDS[c];
-let MODE="direct";
+const N=window.IronNest;
+if(!N){
+  document.querySelector("main").insertAdjacentHTML("afterbegin",'<p class="bad" style="grid-column:1/-1">iron-nest-core.js introuvable : garder ce fichier dans le même dossier que la page.</p>');
+  return;
+}
+const SHELLS=N.AMMO, COLS=N.COLS, esc=N.esc, parseCell=N.parseCell, cellOf=N.cellOf;
+const GRID_W=N.GRID_W_M, GRID_H=N.GRID_H_M;
+const ROLE={spotter:"Observateur",ref:"Référence",nest:"Iron Nest",target:"Cible",ally:"Allié"};
+const FRIENDLY=new Set(["ally","spotter","nest"]); // amis à ne pas toucher avec le souffle
+const MODES=["direct","azaz","azd","dd"];
+const HIT_PX=14, DRAG_PX=5;
+const defaultShell=kind=>N.pickShell(kind||"unknown","auto",false);
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const fmtCost=c=>c==null?"?":String(c);
+// Réécrit le DOM seulement si le HTML change : un recalcul (ex. perte de focus d'un champ)
+// ne détruit plus le bouton sur lequel l'utilisateur est en train de cliquer.
+function setHTML(el, html){ if(el._html!==html){ el._html=html; el.innerHTML=html; } }
+
 const DEMO=[
-  {name:"Iron Nest",cell:"B2 1:2",role:"nest",kind:"unknown",shell:"HE",status:"active"},
-  {name:"Observateur 1",cell:"G3 3:5",role:"spotter",kind:"unknown",shell:"HE",status:"active"},
-  {name:"Alpha",cell:"J9 9:9",role:"ref",kind:"unknown",shell:"HE",status:"active"},
-  {name:"Cible 3",cell:"A7 8:9",role:"target",kind:"infantry",shell:"HCHE",status:"active"}
+  {name:"Iron Nest",cell:"B2 1:2",role:"nest",kind:"unknown",shell:"HE"},
+  {name:"Observateur 1",cell:"G3 3:5",role:"spotter",kind:"unknown",shell:"HE"},
+  {name:"Alpha",cell:"J9 9:9",role:"ref",kind:"unknown",shell:"HE"},
+  {name:"Cible 3",cell:"A7 8:9",role:"target",kind:"infantry",shell:"HCHE"}
 ];
-let ALIASES=DEMO.map(x=>({...x}));
+let MODE="direct";
+let ALIASES=[];
 let LAST_SOLS=[];
-let MOVE_IDX=null;
 let SELECTED_IDX=null;
-let LAST_MARKS={points:[],lines:[],rays:[],circles:[]};
 let AIM_POINTS=[]; // [{x,y,token,shell}, ...]
 let _selSyncing=false;
 
-function parseCell(s){
-  if(!s) return null;
-  const m=String(s).trim().match(/([A-Ta-t])\s*(10|[1-9])\s*[ ,]?\s*(\d+(?:\.\d+)?)\s*[:/,]\s*(\d+(?:\.\d+)?)/);
-  if(!m) return null;
-  const col=COLS.indexOf(m[1].toUpperCase());
-  const row=+m[2], sx=+m[3], sy=+m[4];
-  if(col<0||row<1||row>10||sx<0||sx>10||sy<0||sy>10) return null;
-  const fmt=v=>{ const n=+v; return (Math.round(n*10)/10).toString(); };
-  return {token:m[1].toUpperCase()+row+" "+fmt(sx)+":"+fmt(sy), col,row,sx,sy, x:col*1000+sx*100, y:(row-1)*1000+sy*100};
+function newAlias(f){
+  const a={name:"",cell:"",role:"target",kind:"unknown",shell:null,status:"active",assigned:true,tube:"G"};
+  Object.keys(f||{}).forEach(k=>{ if(f[k]!=null) a[k]=f[k]; });
+  a.name=String(a.name);
+  if(!ROLE[a.role]) a.role="ref";
+  if(!N.TARGET_KINDS.includes(a.kind)) a.kind="unknown";
+  if(!SHELLS[a.shell]) a.shell=defaultShell(a.kind);
+  if(a.status!=="active") a.status="neutralized"; // anciennes sessions : "destroyed"
+  if(a.tube!=="D") a.tube="G";
+  return a;
 }
+function findAlias(name){ return ALIASES.findIndex(a=>a.name.toLowerCase()===String(name).toLowerCase()); }
+function upsertAlias(name, fields){
+  const i=findAlias(name);
+  if(i>=0){ Object.assign(ALIASES[i], fields); return i; }
+  ALIASES.push(newAlias(Object.assign({name}, fields)));
+  return ALIASES.length-1;
+}
+// Un seul Nest tireur : le rôle « nest » et le champ Canon restent cohérents.
+function afterRoleChange(a, oldRole, oldName){
+  if(a.role==="nest"){
+    ALIASES.forEach(o=>{ if(o!==a && o.role==="nest") o.role="ref"; });
+    $("nest").value=a.name;
+  } else if(oldRole==="nest" && ($("nest").value===oldName || $("nest").value===a.name)){
+    $("nest").value="";
+  }
+}
+function addTargetLine(name){
+  const lines=$("tgts").value.split(/\n/).map(s=>s.trim()).filter(Boolean);
+  if(!lines.includes(name)){ lines.push(name); $("tgts").value=lines.join("\n"); }
+}
+
 function resolve(s){
   const raw=String(s||"").trim();
   if(!raw) return null;
-  const exact=ALIASES.find(a=>a.name.toLowerCase()===raw.toLowerCase());
-  if(exact){
-    const c=parseCell(exact.cell);
+  const al=ALIASES.find(a=>a.name.toLowerCase()===raw.toLowerCase());
+  if(al){
+    const c=parseCell(al.cell);
     if(!c) return null;
-    c.alias=exact.name; c.role=exact.role; return c;
+    c.alias=al.name; c.role=al.role; return c;
   }
   return parseCell(raw);
 }
-function cellOf(x,y){
-  if(x<0||y<0||x>20000||y>10000) return {token:"hors carte",x,y};
-  let col=Math.min(19,Math.floor(x/1000));
-  let row=Math.min(10,Math.floor(y/1000)+1);
-  let sx=Math.round((x-col*1000)/10)/10; // 0.1 = 10 m
-  let sy=Math.round((y-(row-1)*1000)/10)/10;
-  if(sx>=10){col=Math.min(19,col+1);sx=0;}
-  if(sy>=10){row=Math.min(10,row+1);sy=0;}
-  const fmt=v=>(Math.round(v*10)/10).toString();
-  return {token:COLS[col]+row+" "+fmt(sx)+":"+fmt(sy),x,y,col,row,sx,sy};
-}
-function azimut(dx,dy){let a=Math.atan2(dx,dy)*180/Math.PI;return a<0?a+360:a;}
-function dir(az){const r=az*Math.PI/180;return {dx:Math.sin(r),dy:Math.cos(r)};}
 function fireFrom(nest,tgt){
-  const dx=tgt.x-nest.x, dy=tgt.y-nest.y;
-  const dist=Math.hypot(dx,dy), km=dist/1000, az=azimut(dx,dy);
-  const cmin=minC(km), mode=$("modeSel").value;
-  const c=cmin?(mode==="max"?6:cmin):null;
-  return {dx,dy,dist,km,az,cmin,c,elev:c?elev(km,c):null,tof:c?tof(km,c):null};
+  const dx=tgt.x-nest.x, dy=tgt.y-nest.y, dist=Math.hypot(dx,dy), km=dist/1000;
+  const err=N.rangeError(km);
+  const cmin=err?null:N.minCharge(km);
+  const c=cmin?($("modeSel").value==="max"?6:cmin):null;
+  return {dx,dy,dist,km,az:N.azimuthTo(dx,dy),err,cmin,c,elev:c?N.elevation(km,c):null,tof:c?N.timeOfFlight(km,c):null};
 }
-
-function renderList(){
-  $("aliasList").innerHTML = ALIASES.map((a,i)=>
-    '<div class="al">'+
-    '<span class="chip" data-act="edit" data-i="'+i+'" style="cursor:pointer">'+ROLE[a.role]+'</span> '+
-    '<b data-act="edit" data-i="'+i+'" style="cursor:pointer">'+a.name+'</b> '+
-    '<input class="cell-edit" data-i="'+i+'" value="'+a.cell+'" title="Modifier la case" style="width:92px;display:inline-block;padding:2px 4px;font-size:12px;margin:0 4px">'+
-    '<br>'+
-    '<button class="g s" data-act="edit" data-i="'+i+'">Éditer</button>'+
-    '<button class="g s" data-act="canon" data-i="'+i+'">Iron Nest</button>'+
-    '<button class="g s" data-act="a" data-i="'+i+'">Point A</button>'+
-    '<button class="g s" data-act="b" data-i="'+i+'">Point B</button>'+
-    '<button class="g s" data-act="tgt" data-i="'+i+'">+ Cible</button>'+
-    '<button class="g s" data-act="move" data-i="'+i+'">↕</button>'+
-    '<button class="g s" data-act="del" data-i="'+i+'">x</button>'+
-    '</div>'
-  ).join("") || '<p class="hint">Aucun raccourci.</p>';
-  const nest=resolve($("nest").value);
-  $("canonState").innerHTML = nest
-    ? 'Canon actif : <span class="active">'+(nest.alias||nest.token)+' · '+nest.token+'</span>'
-    : 'Canon : non défini — clique <b>Iron Nest</b> sur un raccourci ou tape B2 1:2';
-  const opts='<option value="">— liste —</option>'+ALIASES.map(a=>'<option value="'+a.name+'">'+a.name+' · '+a.cell+'</option>').join('');
-  document.querySelectorAll("select.pick").forEach(sel=>{
-    const cur=sel.value;
-    sel.innerHTML=opts;
-    if(cur && ALIASES.some(a=>a.name===cur)) sel.value=cur;
-  });
-  const at=$("addTgt");
-  if(at){
-    at.innerHTML='<option value="">+ cible depuis la liste</option>'+ALIASES.map(a=>'<option value="'+a.name+'">'+a.name+' · '+a.cell+'</option>').join('');
-  }
-}
-
-function setCanon(name){
-  // un seul Nest qui tire
+function friendliesInBlast(aim, shellName){
+  const sh=SHELLS[shellName]||SHELLS.HE;
+  // STAR / SMOKE / TEAR GAS… : 0 dégât → toujours SAFE
+  if(!(sh.dmg>0)) return {unsafe:false, hits:[], safeShell:true};
+  const R=sh.blast_km*1000, hits=[];
+  const check=(name,role,c)=>{ const d=Math.hypot(c.x-aim.x,c.y-aim.y); if(d<=R+1) hits.push({name,role,dist_m:Math.round(d)}); };
   ALIASES.forEach(a=>{
-    if(a.name===name) a.role="nest";
-    else if(a.role==="nest") a.role="ref";
+    if(!FRIENDLY.has(a.role) || a.status==="neutralized") return;
+    const c=parseCell(a.cell); if(c) check(a.name,a.role,c);
   });
-  $("nest").value=name;
-  $("gun").value=name;
-  renderList(); renderTargetBoard(); go();
+  const nest=resolve($("nest").value);
+  if(nest && !nest.alias) check("Nest",'nest',nest);
+  return {unsafe:hits.length>0, hits, safeShell:false};
 }
-function getFiringNest(){
-  const byRole=ALIASES.find(a=>a.role==="nest");
-  if(byRole) return byRole;
-  return ALIASES.find(a=>a.name===$("nest").value||a.name===$("gun").value)||null;
+const hitsText=fr=>fr.hits.map(h=>h.name+" ("+(ROLE[h.role]||h.role)+") @"+h.dist_m+"m").join(", ");
+
+// --- Listes -------------------------------------------------------------------------
+function aliasOptions(first){
+  return '<option value="">'+first+'</option>'+ALIASES.map(a=>'<option value="'+esc(a.name)+'">'+esc(a.name)+' · '+esc(a.cell)+'</option>').join("");
 }
-function isTargetLike(a){
-  return a && (a.role==="target" || a.kind==="infantry"||a.kind==="bunker"||a.kind==="nest"||a.kind==="vehicle"||a.kind==="artillery");
+function renderList(){
+  setHTML($("aliasList"), ALIASES.map((a,i)=>
+    '<div class="al">'+
+    '<span class="chip" data-act="edit" data-i="'+i+'" style="cursor:pointer">'+esc(ROLE[a.role]||a.role)+'</span> '+
+    '<b data-act="edit" data-i="'+i+'" style="cursor:pointer">'+esc(a.name)+'</b> '+
+    '<input class="cell-edit" data-i="'+i+'" value="'+esc(a.cell)+'" title="Modifier la case" aria-label="Case de '+esc(a.name)+'" style="width:92px;display:inline-block;padding:2px 4px;font-size:12px;margin:0 4px">'+
+    '<br>'+
+    '<button class="g s" type="button" data-act="edit" data-i="'+i+'">Éditer</button>'+
+    '<button class="g s" type="button" data-act="canon" data-i="'+i+'">Iron Nest</button>'+
+    '<button class="g s" type="button" data-act="a" data-i="'+i+'">Point A</button>'+
+    '<button class="g s" type="button" data-act="b" data-i="'+i+'">Point B</button>'+
+    '<button class="g s" type="button" data-act="tgt" data-i="'+i+'">+ Cible</button>'+
+    '<button class="g s" type="button" data-act="move" data-i="'+i+'" title="Déplacer sur la carte">↕</button>'+
+    '<button class="g s" type="button" data-act="del" data-i="'+i+'" title="Supprimer">x</button>'+
+    '</div>'
+  ).join("") || '<p class="hint">Aucun raccourci.</p>');
+  const nest=resolve($("nest").value);
+  setHTML($("canonState"), nest
+    ? 'Canon actif : <span class="active">'+esc(nest.alias||nest.token)+' · '+esc(nest.token)+'</span>'
+    : 'Canon : non défini — clique <b>Iron Nest</b> sur un raccourci ou tape B2 1:2');
+  document.querySelectorAll("select.pick").forEach(sel=>{
+    setHTML(sel, aliasOptions("— liste —"));
+  });
+  setHTML($("addTgt"), aliasOptions("+ cible depuis la liste"));
 }
-function statusLabel(s){
-  return s==="neutralized"?"Neutralisé":"Actif";
-}
+
 function renderTargetBoard(){
   const box=$("tgtBoardBody");
-  if(!box) return;
-  const nest=getFiringNest();
+  const nest=resolve($("nest").value);
   const list=ALIASES.filter(a=>a.role==="target");
-  if(!list.length){
-    box.innerHTML='<p class="hint">Aucune cible (rôle « Cible »).</p>';
-    return;
-  }
-  let html='<p class="hint" style="margin:0 0 6px">Nest tireur : <b class="active">'+(nest?nest.name+" · "+nest.cell:"non défini")+'</b> — tubes Gauche / Droite</p>';
-  html+='<table><thead><tr><th>Ass.</th><th>Tube</th><th>Cible</th><th>Case</th><th>Obus</th><th>Efficacité</th><th>FF</th><th>État</th></tr></thead><tbody>';
+  if(!list.length){ setHTML(box, '<p class="hint">Aucune cible (rôle « Cible »).</p>'); return; }
+  let html='<p class="hint" style="margin:0 0 6px">Nest tireur : <b class="active">'+(nest?esc(nest.alias||"Nest")+" · "+esc(nest.token):"non défini")+'</b> — tubes Gauche / Droite</p>';
+  html+='<div style="overflow:auto"><table><thead><tr><th>Ass.</th><th>Tube</th><th>Cible</th><th>Case</th><th>Obus</th><th>Efficacité</th><th>FF</th><th>État</th></tr></thead><tbody>';
   list.forEach(a=>{
     const idx=ALIASES.indexOf(a);
-    if(a.assigned===undefined) a.assigned=true;
-    if(!a.tube) a.tube="G";
-    const st=a.status||"active";
-    const shell=a.shell||"HE";
-    const vs=shellVsTarget(shell, a.kind||"unknown");
-    let ff="—", ffClass="tag-ok";
-    if(nest && st==="active" && a.assigned!==false){
-      const c=parseCell(a.cell);
-      if(c){
-        const fr=alliesInBlast(c, shell);
-        if(fr.safeShell){ ff="SAFE"; ffClass="tag-ok"; }
-        else if(fr.unsafe){ ff="UNSAFE"; ffClass="tag-bad"; }
-        else { ff="SAFE"; ffClass="tag-ok"; }
-      }
+    const active=a.status!=="neutralized", assigned=a.assigned!==false;
+    const vs=N.effectiveness(a.shell, a.kind);
+    let ff="—", ffClass="", ffTitle="";
+    const c=parseCell(a.cell);
+    if(c && active && assigned){
+      const fr=friendliesInBlast(c, a.shell);
+      if(fr.unsafe){ ff="UNSAFE"; ffClass="tag-bad"; ffTitle=hitsText(fr); }
+      else { ff="SAFE"; ffClass="tag-ok"; }
     }
     const vsClass=vs.level==="ok"?"tag-ok":(vs.level==="weak"?"tag-mid":"tag-bad");
-    html+='<tr style="'+(st!=="active"?"opacity:.55":"")+'">';
-    html+='<td><input type="checkbox" data-tb="assign" data-i="'+idx+'" '+(a.assigned!==false?"checked":"")+'></td>';
-    html+='<td><select data-tb="tube" data-i="'+idx+'"><option value="G"'+(a.tube==="G"?" selected":"")+'>G</option><option value="D"'+(a.tube==="D"?" selected":"")+'>D</option></select></td>';
-    html+='<td><b data-act="edit" data-i="'+idx+'" style="cursor:pointer">'+a.name+'</b><br><span class="hint">'+(a.kind||"?")+'</span></td>';
-    html+='<td>'+a.cell+'</td>';
-    html+='<td>'+shell+'</td>';
-    html+='<td><span class="'+vsClass+'" title="'+vs.detail+'">'+vs.tag+'</span></td>';
-    html+='<td><span class="'+ffClass+'">'+ff+'</span></td>';
-    html+='<td><select data-tb="status" data-i="'+idx+'">';
-    html+='<option value="active"'+(st==="active"?" selected":"")+'>Actif</option>';
-    html+='<option value="neutralized"'+(st==="neutralized"?" selected":"")+'>Neutralisé</option>';
+    html+='<tr style="'+(!active||!assigned?"opacity:.55":"")+'">';
+    html+='<td><input type="checkbox" data-tb="assign" data-i="'+idx+'" aria-label="Assigner '+esc(a.name)+'"'+(assigned?" checked":"")+'></td>';
+    html+='<td><select data-tb="tube" data-i="'+idx+'" aria-label="Tube"><option value="G"'+(a.tube!=="D"?" selected":"")+'>G</option><option value="D"'+(a.tube==="D"?" selected":"")+'>D</option></select></td>';
+    html+='<td><b data-act="edit" data-i="'+idx+'" style="cursor:pointer">'+esc(a.name)+'</b><br><span class="hint">'+esc(a.kind)+'</span></td>';
+    html+='<td>'+esc(a.cell)+'</td>';
+    html+='<td>'+esc(a.shell)+'</td>';
+    html+='<td><span class="'+vsClass+'" title="'+esc(vs.detail)+'">'+vs.tag+'</span></td>';
+    html+='<td><span class="'+ffClass+'" title="'+esc(ffTitle)+'">'+ff+'</span></td>';
+    html+='<td><select data-tb="status" data-i="'+idx+'" aria-label="État">';
+    html+='<option value="active"'+(active?" selected":"")+'>Actif</option>';
+    html+='<option value="neutralized"'+(!active?" selected":"")+'>Neutralisé</option>';
     html+='</select></td></tr>';
   });
-  html+='</tbody></table>';
-  const alive=list.filter(a=>(a.status||"active")==="active" && a.assigned!==false).length;
+  html+='</tbody></table></div>';
+  const alive=list.filter(a=>a.status!=="neutralized" && a.assigned!==false).length;
   const neu=list.filter(a=>a.status==="neutralized").length;
-  html+='<p class="hint" style="margin-top:6px">Suivi : <span class="active">'+alive+' actif(s)</span> · '+neu+' neutralisé(s)</p>';
-  box.innerHTML=html;
+  html+='<p class="hint" style="margin-top:6px">Suivi : <span class="active">'+alive+' actif(s) assigné(s)</span> · '+neu+' neutralisé(s)</p>';
+  setHTML(box, html);
 }
-
-function onListClick(e){
-  if(e.target.closest("input.cell-edit")) return;
-  const el=e.target.closest("[data-act]");
-  if(!el) return;
-  const i=+el.getAttribute("data-i");
-  const a=ALIASES[i];
-  if(!a) return;
-  const act=el.getAttribute("data-act");
-  if(act==="del"){
-    if(SELECTED_IDX===i) SELECTED_IDX=null;
-    ALIASES.splice(i,1);
-    if(SELECTED_IDX!=null && SELECTED_IDX>i) SELECTED_IDX--;
-    renderList(); syncSelPanel(); go(); return;
-  }
-  if(act==="edit" || act==="move"){
-    if(act==="move") $("mapAction").value="move";
-    selectPoint(i);
-    return;
-  }
-  if(act==="canon"){ setCanon(a.name); selectPoint(i); return; }
-  if(act==="a"){ $("a1").value=a.name; $("b1").value=a.name; $("c1").value=a.name; selectPoint(i); return; }
-  if(act==="b"){ $("a2").value=a.name; $("b2").value=a.name; $("c2").value=a.name; selectPoint(i); return; }
-  if(act==="tgt"){
-    const lines=$("tgts").value.split(/\n/).map(s=>s.trim()).filter(Boolean);
-    if(!lines.includes(a.name)) lines.push(a.name);
-    $("tgts").value=lines.join("\n");
-    selectPoint(i);
-  }
-}
-
 
 function renderAmmoRef(){
-  const box=$("ammoRef"); if(!box) return;
-  let h='<table><thead><tr><th>Obus</th><th>Coût</th><th>Rayon</th><th>Dégâts</th><th>Confirmé</th><th>Effet / usage</th><th>Inf</th><th>Véh</th><th>Art</th><th>Bunker</th><th>Nest</th></tr></thead><tbody>';
+  let h='<table><thead><tr><th>Obus</th><th>Coût</th><th>Rayon</th><th>Dégâts</th><th>Source</th><th>Effet / usage</th><th>Inf</th><th>Véh</th><th>Art</th><th>Bunker</th><th>Nest</th></tr></thead><tbody>';
   const mark=v=>v==="ok"?"✓":v==="weak"?"~":"✗";
   Object.keys(SHELLS).forEach(k=>{
     const s=SHELLS[k];
-    h+='<tr>';
-    h+='<td><b>'+k+'</b></td>';
-    h+='<td>'+(s.cost==null?"?":s.cost+" rc")+'</td>';
-    h+='<td>'+s.blast+' km</td>';
-    h+='<td>'+(s.dmg?"oui":"non")+'</td>';
-    h+='<td>'+(s.confirmed?"wiki":"hyp.")+'</td>';
-    h+='<td class="hint">'+s.note+'</td>';
-    ["infantry","vehicle","artillery","bunker","nest"].forEach(kk=>{
-      h+='<td>'+mark((s.vs&&s.vs[kk])||"ok")+'</td>';
-    });
+    h+='<tr><td><b>'+k+'</b></td><td>'+fmtCost(s.cost)+' rc</td><td>'+s.blast_km+' km</td>';
+    h+='<td>'+(s.dmg===0?"non":s.dmg===2?"oui (pénétrant)":"oui")+'</td><td>'+(s.confirmed?"wiki":"hyp.")+'</td>';
+    h+='<td class="hint">'+esc(s.note)+'</td>';
+    ["infantry","vehicle","artillery","bunker","nest"].forEach(kk=>{ h+='<td>'+mark(s.vs[kk])+'</td>'; });
     h+='</tr>';
   });
-  h+='</tbody></table>';
-  box.innerHTML=h;
+  $("ammoRef").innerHTML=h+'</tbody></table>';
 }
-function sessKey(){ return "iron_nest_sessions_v1"; }
+function fillShellSelect(sel, current){
+  sel.innerHTML=Object.keys(SHELLS).map(k=>{
+    const s=SHELLS[k];
+    return '<option value="'+k+'">'+k+' · R '+s.blast_km+' km · '+fmtCost(s.cost)+' rc'+(s.dmg===0?" · 0 dmg":"")+(s.confirmed?"":" · hyp.")+'</option>';
+  }).join("");
+  sel.value=SHELLS[current]?current:"HE";
+}
+
+// --- Sessions (localStorage du navigateur) ------------------------------------------------
+const SESS_KEY="iron_nest_sessions_v1";
 function listSessions(){
-  try{ return JSON.parse(localStorage.getItem(sessKey())||"{}"); }catch(e){ return {}; }
+  try{ return JSON.parse(localStorage.getItem(SESS_KEY)||"{}")||{}; }catch(e){ return {}; }
+}
+function writeSessions(all){
+  try{ localStorage.setItem(SESS_KEY, JSON.stringify(all)); return true; }
+  catch(e){ alert("Sauvegarde impossible : stockage du navigateur indisponible ou plein."); return false; }
 }
 function refreshSessList(){
-  const sel=$("sessList"); if(!sel) return;
-  const all=listSessions();
-  const names=Object.keys(all).sort();
-  sel.innerHTML='<option value="">— sessions —</option>'+names.map(n=>'<option value="'+n+'">'+n+'</option>').join("");
+  const names=Object.keys(listSessions()).sort();
+  $("sessList").innerHTML='<option value="">— sessions —</option>'+names.map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>').join("");
 }
+const FIELDS=["a1","a2","az1","az2","b1","b2","baz","bd","c1","c2","cd1","cd2"];
 function exportState(){
-  return {
-    aliases:ALIASES,
-    nest:$("nest").value,
-    gun:$("gun").value,
-    tgts:$("tgts").value,
-    mode:MODE,
-    charge:$("modeSel").value,
-    aims:AIM_POINTS,
-    a1:$("a1").value,a2:$("a2").value,az1:$("az1").value,az2:$("az2").value,
-    b1:$("b1").value,b2:$("b2").value,baz:$("baz").value,bd:$("bd").value,
-    c1:$("c1").value,c2:$("c2").value,cd1:$("cd1").value,cd2:$("cd2").value
-  };
+  const st={aliases:ALIASES, nest:$("nest").value, tgts:$("tgts").value, mode:MODE, charge:$("modeSel").value, aims:AIM_POINTS, aimShell:$("aimShell").value};
+  FIELDS.forEach(id=>{ st[id]=$(id).value; });
+  return st;
 }
 function importState(st){
   if(!st) return;
-  ALIASES=(st.aliases||[]).map(a=>({...a}));
-  AIM_POINTS=st.aims||[];
-  SELECTED_IDX=null; MOVE_IDX=null;
-  if($("nest")) $("nest").value=st.nest||"";
-  if($("gun")) $("gun").value=st.gun||"";
-  if($("tgts")) $("tgts").value=st.tgts||"";
-  if(st.mode) tab(st.mode);
+  ALIASES=(st.aliases||[]).map(a=>newAlias(a));
+  AIM_POINTS=(st.aims||[]).filter(a=>a && isFinite(a.x) && isFinite(a.y));
+  SELECTED_IDX=null;
+  $("nest").value=st.nest||st.gun||""; // "gun" : ancien champ « Nest pour le tir »
+  $("tgts").value=st.tgts||"";
   if(st.charge) $("modeSel").value=st.charge;
-  ["a1","a2","az1","az2","b1","b2","baz","bd","c1","c2","cd1","cd2"].forEach(id=>{
-    if(st[id]!=null && $(id)) $(id).value=st[id];
-  });
-  renderList(); syncSelPanel(); renderTargetBoard(); evaluateAim(); go();
+  if(st.aimShell && SHELLS[st.aimShell]) $("aimShell").value=st.aimShell;
+  FIELDS.forEach(id=>{ if(st[id]!=null) $(id).value=st[id]; });
+  syncSelPanel();
+  tab(MODES.includes(st.mode)?st.mode:"direct");
 }
 function saveSession(){
   const name=($("sessName").value||"").trim()||("Session "+new Date().toLocaleString());
   const all=listSessions();
   all[name]=exportState();
-  localStorage.setItem(sessKey(), JSON.stringify(all));
+  if(!writeSessions(all)) return;
   $("sessName").value=name;
   refreshSessList();
   $("sessList").value=name;
@@ -537,155 +478,99 @@ function loadSession(){
 }
 function delSession(){
   const name=$("sessList").value;
-  if(!name) return;
-  if(!confirm("Supprimer « "+name+" » ?")) return;
+  if(!name || !confirm("Supprimer « "+name+" » ?")) return;
   const all=listSessions();
   delete all[name];
-  localStorage.setItem(sessKey(), JSON.stringify(all));
-  refreshSessList();
+  if(writeSessions(all)) refreshSessList();
 }
 function resetAll(){
   if(!confirm("Reset complet de la session courante ?")) return;
-  ALIASES=[];
-  AIM_POINTS=[];
-  SELECTED_IDX=null; MOVE_IDX=null; MODE="direct";
-  ["nest","gun","tgts","a1","a2","b1","b2","c1","c2","aimCell","sessName"].forEach(id=>{ if($(id)) $(id).value=""; });
+  ALIASES=[]; AIM_POINTS=[]; SELECTED_IDX=null;
+  ["nest","tgts","a1","a2","b1","b2","c1","c2","aimCell","sessName","mapName"].forEach(id=>{ $(id).value=""; });
+  syncSelPanel();
   tab("direct");
-  renderList(); syncSelPanel(); renderTargetBoard(); evaluateAim();
-  $("res").innerHTML=""; $("kpis").innerHTML=""; $("out").textContent="";
-  draw({points:[],lines:[],rays:[],circles:[]});
 }
-
 function seed(){
-  ALIASES=DEMO.map(x=>({name:x.name,cell:x.cell,role:x.role,kind:x.kind||"unknown",shell:x.shell||"HE",status:x.status||"active",assigned:x.role==="target",tube:x.role==="target"?"G":undefined}));
+  ALIASES=DEMO.map(x=>newAlias(x));
   $("nest").value="Iron Nest";
-  $("gun").value="Iron Nest";
   $("tgts").value="Cible 3";
-  $("a1").value="Observateur 1"; $("a2").value="Alpha";
-  $("b1").value="Observateur 1"; $("b2").value="Alpha";
-  $("c1").value="Observateur 1"; $("c2").value="Alpha";
+  $("a1").value=$("b1").value=$("c1").value="Observateur 1";
+  $("a2").value=$("b2").value=$("c2").value="Alpha";
   SELECTED_IDX=null; AIM_POINTS=[];
-  if($("aimShell")) fillShellSelect($("aimShell"), "HCHE");
-  renderList(); syncSelPanel(); go();
+  fillShellSelect($("aimShell"), "HCHE");
+  syncSelPanel(); updateMapHint(); go();
 }
 
+// --- Édition --------------------------------------------------------------------------------
 function addAlias(){
   const name=$("alName").value.trim();
   const cell=parseCell($("alCell").value);
   const role=$("alRole").value;
   if(!name||!cell){ alert("Nom + case requis. Exemple : Observateur 1 / G3 3:5"); return; }
-  const i=ALIASES.findIndex(a=>a.name.toLowerCase()===name.toLowerCase());
-  const rec={name,cell:cell.token,role};
-  if(i>=0) ALIASES[i]=rec; else ALIASES.push(rec);
-  if(role==="nest") setCanon(name);
+  const i0=findAlias(name), old=i0>=0?{role:ALIASES[i0].role,name:ALIASES[i0].name}:{};
+  const i=upsertAlias(name,{cell:cell.token, role});
+  afterRoleChange(ALIASES[i], old.role, old.name);
   $("alName").value=""; $("alCell").value="";
-  renderList(); go();
-}
-
-function tab(m){
-  MODE=m;
-  document.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("on", b.getAttribute("data-mode")===m));
-  ["direct","azaz","azd","dd"].forEach(k=>{ $("p-"+k).hidden = k!==m; });
   go();
 }
+function saveSol(i, role){
+  const s=LAST_SOLS[i];
+  if(!s||!s.token||s.token==="hors carte"){ alert("Point hors carte"); return; }
+  const inp=$("solName"+i);
+  const name=(inp && inp.value.trim()) || s.label || ("Point "+(i+1));
+  const i0=findAlias(name), old=i0>=0?{role:ALIASES[i0].role,name:ALIASES[i0].name}:{};
+  const j=upsertAlias(name,{cell:s.token, role:role||"target"});
+  afterRoleChange(ALIASES[j], old.role, old.name);
+  go();
+}
+function deleteAlias(i){
+  ALIASES.splice(i,1);
+  if(SELECTED_IDX===i) SELECTED_IDX=null;
+  else if(SELECTED_IDX!=null && SELECTED_IDX>i) SELECTED_IDX--;
+  syncSelPanel(); updateMapHint(); go();
+}
+function onListClick(e){
+  if(e.target.closest("input.cell-edit")) return;
+  const el=e.target.closest("[data-act]");
+  if(!el) return;
+  const i=+el.getAttribute("data-i"), a=ALIASES[i];
+  if(!a) return;
+  const act=el.getAttribute("data-act");
+  if(act==="del"){ deleteAlias(i); return; }
+  if(act==="move") $("mapAction").value="move";
+  if(act==="canon"){ a.role="nest"; afterRoleChange(a); }
+  if(act==="a"){ $("a1").value=$("b1").value=$("c1").value=a.name; }
+  if(act==="b"){ $("a2").value=$("b2").value=$("c2").value=a.name; }
+  if(act==="tgt") addTargetLine(a.name);
+  selectPoint(i);
+}
 
-function rayRay(A,azA,B,azB){
-  const a=dir(azA), b=dir(azB);
-  const den=a.dx*b.dy-a.dy*b.dx;
-  if(Math.abs(den)<1e-9) return {error:"Rayons parallèles"};
-  const dx=B.x-A.x, dy=B.y-A.y;
-  const t=(dx*b.dy-dy*b.dx)/den, s=(dx*a.dy-dy*a.dx)/den;
-  return {points:[{x:A.x+t*a.dx,y:A.y+t*a.dy}], note:(t<=0||s<=0)?"Intersection derrière un rayon":null};
-}
-function rayCircle(A,az,B,R){
-  const d=dir(az), fx=A.x-B.x, fy=A.y-B.y;
-  const qb=2*(fx*d.dx+fy*d.dy), qc=fx*fx+fy*fy-R*R, disc=qb*qb-4*qc;
-  if(disc<-1e-6) return {error:"Pas d'intersection rayon / cercle"};
-  const s=Math.sqrt(Math.max(0,disc));
-  const ts=[(-qb-s)/2,(-qb+s)/2].filter(t=>t>1);
-  if(!ts.length) return {error:"Intersection derrière le rayon"};
-  return {points:ts.map(t=>({x:A.x+t*d.dx,y:A.y+t*d.dy}))};
-}
-function circleCircle(A,rA,B,rB){
-  const dx=B.x-A.x, dy=B.y-A.y, d=Math.hypot(dx,dy);
-  if(d<1e-6) return {error:"Points confondus"};
-  if(d>rA+rB+1e-6) return {error:"Cercles disjoints"};
-  if(d<Math.abs(rA-rB)-1e-6) return {error:"Un cercle dans l'autre"};
-  const a=(rA*rA-rB*rB+d*d)/(2*d);
-  const h=Math.sqrt(Math.max(0,rA*rA-a*a));
-  const mx=A.x+a*dx/d, my=A.y+a*dy/d, px=-dy/d*h, py=dx/d*h;
-  const pts=[{x:mx+px,y:my+py},{x:mx-px,y:my-py}];
-  return h<1e-4?{points:[pts[0]],note:"Tangence"}:{points:pts,note:"2 solutions — 3e indice nécessaire"};
-}
-function svgEventToMeters(ev){
-  const svg=$("map");
-  const pt=svg.createSVGPoint();
-  pt.x=ev.clientX; pt.y=ev.clientY;
-  const ctm=svg.getScreenCTM();
-  if(!ctm) return null;
-  const p=pt.matrixTransform(ctm.inverse());
-  // viewBox: x = km east, y_svg = 10 - y_km_north
-  const x_m=p.x*1000;
-  const y_m=(10-p.y)*1000;
-  return {x:x_m, y:y_m, sx:p.x, sy:p.y};
-}
-function findNearestAlias(x,y,maxM){
-  maxM=maxM||600;
-  let best=-1, bestD=maxM;
-  ALIASES.forEach((a,i)=>{
-    const c=parseCell(a.cell); if(!c) return;
-    const d=Math.hypot(c.x-x,c.y-y);
-    if(d<bestD){bestD=d;best=i;}
-  });
-  return best;
-}
-function fillShellSelect(sel, current){
-  sel.innerHTML=Object.keys(SHELLS).map(k=>{
-    const s=SHELLS[k];
-    const nd=s.dmg===false?" · 0 dmg":"";
-    return '<option value="'+k+'">'+k+' · R '+s.blast+' km · '+s.cost+'rc'+nd+'</option>';
-  }).join("");
-  if(current && SHELLS[current]) sel.value=current;
-  else sel.value="HE";
-}
-function selectPoint(i){
-  SELECTED_IDX=(i==null||i<0)?null:i;
-  if(SELECTED_IDX!=null) MOVE_IDX=SELECTED_IDX;
+function selectPoint(i, focus){
+  SELECTED_IDX=(i==null||i<0||!ALIASES[i])?null:i;
   syncSelPanel();
   updateMapHint();
   go();
-  if(SELECTED_IDX!=null){
-    // focus case for keyboard edit after map click
-    setTimeout(function(){ try{ $("selCell").focus(); $("selCell").select(); }catch(e){} }, 0);
+  if(SELECTED_IDX!=null && focus!==false){
+    try{ $("selCell").focus({preventScroll:true}); $("selCell").select(); }catch(e){}
   }
 }
 function syncSelPanel(){
   const panel=$("selPanel");
-  if(SELECTED_IDX==null || !ALIASES[SELECTED_IDX]){
-    panel.style.display="none";
-    return;
-  }
-  const a=ALIASES[SELECTED_IDX];
+  const a=SELECTED_IDX==null?null:ALIASES[SELECTED_IDX];
+  if(!a){ SELECTED_IDX=null; panel.style.display="none"; return; }
   panel.style.display="block";
   _selSyncing=true;
-  $("selName").value=a.name||"";
-  $("selCell").value=a.cell||"";
-  $("selRole").value=a.role||"target";
-  $("selKind").value=a.kind||"unknown";
-  fillShellSelect($("selShell"), a.shell||DEFAULT_SHELL[a.kind||"unknown"]||"HE");
-  $("selStatus").value=a.status||"active";
+  $("selName").value=a.name;
+  $("selCell").value=a.cell;
+  $("selRole").value=a.role;
+  $("selKind").value=a.kind;
+  fillShellSelect($("selShell"), a.shell);
+  $("selStatus").value=a.status;
   _selSyncing=false;
-  const sh=SHELLS[a.shell]||SHELLS.HE;
-  const c=parseCell(a.cell);
-  const roleLabel=ROLE[a.role]||a.role;
-  $("selInfo").textContent=
-    roleLabel+" · "+
-    (c?("XY "+Math.round(c.x)+" / "+Math.round(c.y)+" m · "):"")+
-    "Obus "+(a.shell||"HE")+" · rayon "+sh.blast+" km · "+sh.note+
-    (a.status==="destroyed"?" · DÉTRUIT":"");
-  // titre du panneau selon le type
-  const title=panel.querySelector("div");
-  if(title) title.textContent="Point sélectionné — "+roleLabel+" (« "+a.name+" »)";
+  const sh=SHELLS[a.shell]||SHELLS.HE, c=parseCell(a.cell), roleLabel=ROLE[a.role]||a.role;
+  $("selInfo").textContent=roleLabel+" · "+(c?("XY "+Math.round(c.x)+" / "+Math.round(c.y)+" m · "):"")+
+    "Obus "+a.shell+" · rayon "+sh.blast_km+" km · "+sh.note+(a.status==="neutralized"?" · NEUTRALISÉ":"");
+  $("selTitle").textContent="Point sélectionné — "+roleLabel+" (« "+a.name+" »)";
 }
 function applySelPanel(){
   if(_selSyncing || SELECTED_IDX==null || !ALIASES[SELECTED_IDX]) return;
@@ -694,388 +579,297 @@ function applySelPanel(){
   const cell=parseCell($("selCell").value);
   if(!name){ alert("Nom requis"); syncSelPanel(); return; }
   if(!cell){ alert("Case invalide (ex. B3 4:4)"); syncSelPanel(); return; }
-  const oldName=a.name;
-  const oldRole=a.role;
-  a.name=name;
-  a.cell=cell.token;
-  a.role=$("selRole").value;
-  a.kind=$("selKind").value;
-  a.shell=$("selShell").value;
-  a.status=$("selStatus").value;
-  // un seul Nest tireur
-  if(a.role==="nest"){
-    ALIASES.forEach(o=>{ if(o!==a && o.role==="nest") o.role="ref"; });
-    $("nest").value=name;
-    $("gun").value=name;
-  } else if(oldRole==="nest"){
-    // quitte le rôle Nest : on peut repasser obs / cible / ref librement
-    const other=ALIASES.find(o=>o!==a && o.role==="nest");
-    if(!other){
-      // garder le champ nest sur un éventuel autre, sinon vider si c'était lui
-      if($("nest").value===oldName || $("nest").value===name){
-        const fallback=ALIASES.find(o=>o.role==="nest");
-        $("nest").value=fallback?fallback.name:"";
-        $("gun").value=$("nest").value;
-      }
-    }
-  }
-  if(a.role==="target" && a.assigned===undefined) a.assigned=true;
-  ["nest","gun","a1","a2","b1","b2","c1","c2"].forEach(id=>{
-    if($(id).value===oldName) $(id).value=name;
-  });
-  const lines=$("tgts").value.split(/\n/).map(s=>s.trim());
-  let newLines=lines.map(l=>l===oldName?name:l);
-  if(a.role==="target" && !newLines.includes(name)) newLines.push(name);
-  if(a.role!=="target") newLines=newLines.filter(l=>l!==name && l!==oldName);
-  $("tgts").value=newLines.filter(Boolean).join("\n");
-  $("selCell").value=cell.token;
-  const sh=SHELLS[a.shell]||SHELLS.HE;
-  $("selInfo").textContent="XY "+Math.round(cell.x)+" / "+Math.round(cell.y)+" m · "+statusLabel(a.status)+" · Obus "+a.shell+" · R "+sh.blast+" km";
-  renderList();
-  renderTargetBoard();
+  const other=findAlias(name);
+  if(other>=0 && other!==SELECTED_IDX){ alert("Un autre point s'appelle déjà « "+name+" »"); syncSelPanel(); return; }
+  const oldName=a.name, oldRole=a.role;
+  Object.assign(a,{name, cell:cell.token, role:$("selRole").value, kind:$("selKind").value, shell:$("selShell").value, status:$("selStatus").value});
+  afterRoleChange(a, oldRole, oldName);
+  ["nest","a1","a2","b1","b2","c1","c2"].forEach(id=>{ if($(id).value===oldName) $(id).value=name; });
+  let lines=$("tgts").value.split(/\n/).map(s=>s.trim()).map(l=>l===oldName?name:l);
+  if(a.role==="target" && !lines.includes(name)) lines.push(name);
+  if(a.role!=="target") lines=lines.filter(l=>l!==name);
+  $("tgts").value=lines.filter(Boolean).join("\n");
+  syncSelPanel();
   go();
 }
 
-function updateMapHint(){
-  const act=$("mapAction").value;
-  const svg=$("map");
-  const h=$("mapHint");
-  svg.classList.toggle("place-on", act!=="off");
-  if(act==="off"){
-    h.textContent="Clic carte désactivé.";
-    h.classList.remove("on");
-  } else if(act==="move"){
-    if(SELECTED_IDX!=null && ALIASES[SELECTED_IDX]){
-      h.textContent="Déplacer « "+ALIASES[SELECTED_IDX].name+" » : clique sur la nouvelle position (ou près d’un autre point pour le sélectionner).";
-    } else {
-      h.textContent="Mode déplacer : clique près d’un point pour le sélectionner, puis reclique pour le poser.";
-    }
-    h.classList.add("on");
-  } else if(act==="aim"){
-    h.textContent="Point de chute : clique sur la carte pour poser l’impact multi-cibles (rayon de l’obus).";
-    h.classList.add("on");
-  } else {
-    h.textContent="Nouveau point : clique sur la grille. Clic près d’un existant → sélection + édition clavier ci-dessous.";
-    h.classList.add("on");
-  }
+function tab(m){
+  MODE=MODES.includes(m)?m:"direct";
+  document.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("on", b.getAttribute("data-mode")===MODE));
+  MODES.forEach(k=>{ $("p-"+k).hidden=k!==MODE; });
+  go();
 }
-function placeOrMove(x,y){
-  if(x<0||y<0||x>20000||y>10000) return;
-  const cell=cellOf(x,y);
-  if(cell.token==="hors carte") return;
+
+// --- Carte ------------------------------------------------------------------------------------
+function svgEventToMeters(ev){
+  const ctm=$("map").getScreenCTM();
+  if(!ctm) return null;
+  const p=new DOMPoint(ev.clientX, ev.clientY).matrixTransform(ctm.inverse());
+  // viewBox : x = km vers l'Est, y_svg = 10 - km vers le Nord
+  return {x:p.x*1000, y:(10-p.y)*1000};
+}
+function metersPerPx(){
+  const ctm=$("map").getScreenCTM();
+  return ctm && ctm.a ? 1000/ctm.a : 50;
+}
+function findNearestAlias(x,y){
+  const maxM=HIT_PX*metersPerPx();
+  let best=-1, bestD=maxM;
+  ALIASES.forEach((a,i)=>{
+    const c=parseCell(a.cell); if(!c) return;
+    const d=Math.hypot(c.x-x,c.y-y);
+    if(d<bestD){ bestD=d; best=i; }
+  });
+  return best;
+}
+function updateMapHint(){
+  const act=$("mapAction").value, h=$("mapHint");
+  $("map").classList.toggle("place-on", act!=="off");
+  h.classList.toggle("on", act!=="off");
+  const sel=SELECTED_IDX!=null && ALIASES[SELECTED_IDX];
+  if(act==="off") h.textContent="Clic carte désactivé.";
+  else if(act==="move") h.textContent=sel
+    ? "Déplacer « "+sel.name+" » : clique sur la nouvelle position. Clic sur un autre point = le sélectionner. Glisser un point le déplace aussi."
+    : "Mode déplacer : clique sur un point pour le sélectionner, puis clique sur sa nouvelle position (ou glisse-le).";
+  else if(act==="aim") h.textContent="Point de chute : clique sur la carte pour poser un impact (rayon de l'obus choisi).";
+  else h.textContent="Nouveau point : clique sur une zone vide. Clic sur un point = sélection / édition, glisser = déplacer.";
+}
+function onMapClick(x,y,focus){
   const act=$("mapAction").value;
-  if(act==="off") return;
-  if(act==="aim"){
-    const cell=cellOf(x,y);
-    if(cell.token==="hors carte") return;
-    setAimFromCell(cell.token, $("aimShell").value||"HCHE");
-    return;
-  }
-
-  const near=findNearestAlias(x,y,600);
+  if(act==="off" || x<0 || y<0 || x>GRID_W || y>GRID_H) return;
+  const cell=cellOf(x,y);
+  if(act==="aim"){ addAim(cell.token, $("aimShell").value); return; }
+  const near=findNearestAlias(x,y);
   if(act==="move"){
-    if(SELECTED_IDX==null){
-      if(near<0){ updateMapHint(); return; }
-      selectPoint(near);
-      return;
-    }
+    if(near>=0 && near!==SELECTED_IDX){ selectPoint(near, focus); return; }
+    if(SELECTED_IDX==null || near===SELECTED_IDX) return;
     ALIASES[SELECTED_IDX].cell=cell.token;
-    if(ALIASES[SELECTED_IDX].role==="nest"){
-      $("nest").value=ALIASES[SELECTED_IDX].name;
-      $("gun").value=ALIASES[SELECTED_IDX].name;
-    }
-    syncSelPanel();
-    go();
+    syncSelPanel(); go();
     return;
   }
-
-  // clic proche d'un point existant (Nest, obs, ref, cible…) = sélection + édition
-  if(near>=0 && !$("mapName").value.trim()){
-    $("mapAction").value="move";
-    selectPoint(near);
-    return;
-  }
-  let name=$("mapName").value.trim();
+  // nouveau point ; un nom saisi permet de poser un point tout près d'un autre
+  const named=$("mapName").value.trim();
+  if(near>=0 && !named){ if(near!==SELECTED_IDX) selectPoint(near, focus); return; }
+  let name=named;
+  if(!name){ let n=1; while(findAlias("P"+n)>=0) n++; name="P"+n; }
   const role=$("mapRole").value;
-  if(!name){
-    let n=1;
-    while(ALIASES.some(a=>a.name==="P"+n)) n++;
-    name="P"+n;
-  }
-  const j=ALIASES.findIndex(a=>a.name.toLowerCase()===name.toLowerCase());
-  const rec={name, cell:cell.token, role, kind:"unknown", shell:DEFAULT_SHELL.unknown||"HE", status:"active"};
-  if(j>=0) Object.assign(ALIASES[j], rec); else ALIASES.push(rec);
-  if(role==="nest") setCanon(name);
-  else if(role==="target"){
-    const lines=$("tgts").value.split(/\n/).map(s=>s.trim()).filter(Boolean);
-    if(!lines.includes(name)){ lines.push(name); $("tgts").value=lines.join("\n"); }
-  }
+  const i0=findAlias(name), old=i0>=0?{role:ALIASES[i0].role,name:ALIASES[i0].name}:{};
+  const i=upsertAlias(name,{cell:cell.token, role});
+  afterRoleChange(ALIASES[i], old.role, old.name);
+  if(role==="target") addTargetLine(ALIASES[i].name);
   $("mapName").value="";
-  selectPoint(j>=0?j:ALIASES.length-1);
+  selectPoint(i, focus);
 }
 
 function draw(marks){
-  LAST_MARKS=marks;
-  const svg=$("map");
   let g="";
   for(let c=0;c<=20;c++) g+='<line x1="'+c+'" y1="0" x2="'+c+'" y2="10" stroke="#3d3224" stroke-width="0.03"/>';
   for(let r=0;r<=10;r++) g+='<line x1="0" y1="'+r+'" x2="20" y2="'+r+'" stroke="#3d3224" stroke-width="0.03"/>';
   for(let c=0;c<20;c++) g+='<text x="'+(c+0.12)+'" y="9.88" fill="#a89068" font-size="0.28">'+COLS[c]+'</text>';
   for(let r=1;r<=10;r++) g+='<text x="-0.45" y="'+(10-r+0.55)+'" fill="#a89068" font-size="0.28">'+r+'</text>';
   const xy=p=>[p.x/1000,10-p.y/1000];
-  (marks.lines||[]).forEach(l=>{
+  marks.lines.forEach(l=>{
     const A=xy(l.a), B=xy(l.b);
     g+='<line x1="'+A[0]+'" y1="'+A[1]+'" x2="'+B[0]+'" y2="'+B[1]+'" stroke="#d4a017" stroke-width="0.05"/>';
   });
-  (marks.rays||[]).forEach(r=>{
-    const d=dir(r.az), L=25000, A=xy(r.p);
+  marks.rays.forEach(r=>{
+    const d=N.dir(r.az), L=25000, A=xy(r.p);
     g+='<line x1="'+A[0]+'" y1="'+A[1]+'" x2="'+((r.p.x+d.dx*L)/1000)+'" y2="'+(10-(r.p.y+d.dy*L)/1000)+'" stroke="'+(r.col||"#d4a017")+'" stroke-width="0.04" stroke-dasharray="0.12 0.08"/>';
   });
-  (marks.circles||[]).forEach(c=>{
+  marks.circles.forEach(c=>{
     const A=xy(c.p);
     g+='<circle cx="'+A[0]+'" cy="'+A[1]+'" r="'+c.r+'" fill="none" stroke="'+(c.col||"#8aaf5a")+'" stroke-width="0.04" stroke-dasharray="0.14 0.1"/>';
   });
-  // points de chute multi-cibles
   AIM_POINTS.forEach((ap,idx)=>{
-    const sh=SHELLS[ap.shell||$("aimShell").value||"HCHE"]||SHELLS.HE;
-    const A=xy(ap);
-    const fr=alliesInBlast(ap, ap.shell||"HCHE");
-    const stroke=fr.unsafe?"#c45c2a":"#d4a017";
-    g+='<circle cx="'+A[0]+'" cy="'+A[1]+'" r="'+sh.blast+'" fill="rgba(212,160,23,0.12)" stroke="'+stroke+'" stroke-width="0.05"/>';
+    const sh=SHELLS[ap.shell]||SHELLS.HE, A=xy(ap);
+    const stroke=friendliesInBlast(ap, ap.shell).unsafe?"#c45c2a":"#d4a017";
+    g+='<circle cx="'+A[0]+'" cy="'+A[1]+'" r="'+sh.blast_km+'" fill="rgba(212,160,23,0.12)" stroke="'+stroke+'" stroke-width="0.05"/>';
     g+='<circle cx="'+A[0]+'" cy="'+A[1]+'" r="0.12" fill="'+stroke+'"/>';
     g+='<text x="'+(A[0]+0.18)+'" y="'+(A[1]-0.12)+'" fill="'+stroke+'" font-size="0.26">I'+(idx+1)+'</text>';
   });
-    // blast of selected shell
-  if(SELECTED_IDX!=null && ALIASES[SELECTED_IDX]){
-    const sa=ALIASES[SELECTED_IDX];
-    const sc=parseCell(sa.cell);
-    const sh=SHELLS[sa.shell||"HE"]||SHELLS.HE;
-    if(sc && sh.blast){
+  const sa=SELECTED_IDX!=null?ALIASES[SELECTED_IDX]:null;
+  if(sa){
+    const sc=parseCell(sa.cell), sh=SHELLS[sa.shell]||SHELLS.HE;
+    if(sc){
       const A=xy(sc);
-      g+='<circle cx="'+A[0]+'" cy="'+A[1]+'" r="'+sh.blast+'" fill="rgba(196,92,42,0.12)" stroke="#c45c2a" stroke-width="0.04" stroke-dasharray="0.1 0.08"/>';
+      g+='<circle cx="'+A[0]+'" cy="'+A[1]+'" r="'+sh.blast_km+'" fill="rgba(196,92,42,0.12)" stroke="#c45c2a" stroke-width="0.04" stroke-dasharray="0.1 0.08"/>';
     }
   }
   ALIASES.forEach((a,i)=>{
     const c=parseCell(a.cell); if(!c) return;
-    const A=xy(c);
-    const sel=SELECTED_IDX===i;
-    let col=a.role==="nest"?"#d4a017":a.role==="target"?"#c45c2a":a.role==="ally"?"#4a9eff":"#8aaf5a";
-    if(a.status==="destroyed"||a.status==="neutralized") col="#666";
-    g+='<circle cx="'+A[0]+'" cy="'+A[1]+'" r="'+(sel?0.22:0.14)+'" fill="'+col+'" stroke="'+(sel?"#fff":"none")+'" stroke-width="0.06" opacity="'+(a.status==="destroyed"||a.status==="neutralized"?0.45:1)+'"/>';
-    g+='<text x="'+(A[0]+0.2)+'" y="'+(A[1]-0.14)+'" fill="'+col+'" font-size="0.28">'+(a.name+(a.status==="destroyed"?" ✕":a.status==="neutralized"?" ○":""))+'</text>';
+    const A=xy(c), sel=SELECTED_IDX===i, dead=a.status==="neutralized";
+    const col=dead?"#666":a.role==="nest"?"#d4a017":a.role==="target"?"#c45c2a":a.role==="ally"?"#4a9eff":"#8aaf5a";
+    g+='<circle cx="'+A[0]+'" cy="'+A[1]+'" r="'+(sel?0.22:0.14)+'" fill="'+col+'" stroke="'+(sel?"#fff":"none")+'" stroke-width="0.06" opacity="'+(dead?0.45:1)+'"/>';
+    g+='<text x="'+(A[0]+0.2)+'" y="'+(A[1]-0.14)+'" fill="'+col+'" font-size="0.28">'+esc(a.name)+(dead?" ○":"")+'</text>';
   });
-  (marks.points||[]).forEach(p=>{
+  marks.points.forEach(p=>{
     if(p.alias && ALIASES.some(a=>a.name===p.alias)) return;
     const A=xy(p);
     g+='<circle cx="'+A[0]+'" cy="'+A[1]+'" r="0.14" fill="'+(p.col||"#ead9b4")+'"/>';
-    g+='<text x="'+(A[0]+0.18)+'" y="'+(A[1]-0.12)+'" fill="'+(p.col||"#ead9b4")+'" font-size="0.28">'+(p.lab||"")+'</text>';
+    g+='<text x="'+(A[0]+0.18)+'" y="'+(A[1]-0.12)+'" fill="'+(p.col||"#ead9b4")+'" font-size="0.28">'+esc(p.lab||"")+'</text>';
   });
-  svg.innerHTML=g;
+  setHTML($("map"), g);
 }
-function saveSol(i, role){
-  const s=LAST_SOLS[i];
-  if(!s||!s.token||s.token==="hors carte"){ alert("Point hors carte"); return; }
-  const inp=document.getElementById("solName"+i);
-  const name=(inp && inp.value.trim()) || s.label || ("Point "+(i+1));
-  const rec={name, cell:s.token, role:role||"target"};
-  const j=ALIASES.findIndex(a=>a.name.toLowerCase()===name.toLowerCase());
-  if(j>=0) ALIASES[j]=rec; else ALIASES.push(rec);
-  renderList(); go();
-}
-function alliesInBlast(aimCell, shellName){
-  const sh=SHELLS[shellName]||SHELLS.HE;
-  // STAR / SMOKE / TEAR GAS : 0 dégâts → toujours SAFE pour les alliés
-  if(sh.dmg===false) return {unsafe:false, hits:[], blast_km:sh.blast, safeShell:true};
-  const R=(sh.blast||0)*1000;
-  const hits=[];
-  ALIASES.forEach(a=>{
-    if(a.role!=="ally") return;
-    if(a.status==="neutralized"||a.status==="destroyed") return;
-    const c=parseCell(a.cell); if(!c) return;
-    const d=Math.hypot(c.x-aimCell.x, c.y-aimCell.y);
-    if(d<=R+1) hits.push({name:a.name, dist_m:Math.round(d), cell:a.cell});
-  });
-  return {unsafe:hits.length>0, hits, blast_km:sh.blast, safeShell:false};
-}
+
+// --- Points de chute ------------------------------------------------------------------------
 function evaluateAim(){
   const box=$("aimResult");
-  if(!box) return null;
   if(!AIM_POINTS.length){
-    box.innerHTML="Aucun point de chute — mode carte « Point de chute » ou saisie case + Entrée (plusieurs possibles).";
-    return null;
+    setHTML(box, "Aucun point de chute — mode carte « Point de chute » ou case + Entrée (plusieurs possibles).");
+    return;
   }
-  const nest=resolve($("nest").value)||resolve($("gun").value);
+  const nest=resolve($("nest").value);
   let html="";
   AIM_POINTS.forEach((ap,idx)=>{
-    const shell=ap.shell||$("aimShell").value||"HCHE";
-    const sh=SHELLS[shell]||SHELLS.HE;
-    const R=(sh.blast||0)*1000;
+    const shell=SHELLS[ap.shell]?ap.shell:"HE", sh=SHELLS[shell], R=sh.blast_km*1000;
     const covered=[];
-    ALIASES.filter(a=>a.role==="target" && a.assigned!==false && (a.status||"active")==="active").forEach(a=>{
+    ALIASES.filter(a=>a.role==="target" && a.assigned!==false && a.status!=="neutralized").forEach(a=>{
       const c=parseCell(a.cell); if(!c) return;
       const d=Math.hypot(c.x-ap.x, c.y-ap.y);
-      const vs=shellVsTarget(shell, a.kind||"unknown");
-      if(d<=R+1) covered.push({name:a.name, dist_m:Math.round(d), vs, kind:a.kind||"unknown"});
+      if(d<=R+1) covered.push({name:a.name, dist_m:Math.round(d), vs:N.effectiveness(shell, a.kind)});
     });
-    const fr=alliesInBlast(ap, shell);
-    let fireTxt="";
+    const fr=friendliesInBlast(ap, shell);
+    let fireTxt="<span class='bad'>Canon non défini</span>";
     if(nest){
       const f=fireFrom(nest, ap);
-      if(f.c) fireTxt="AZ <b>"+f.az.toFixed(1)+"°</b> · "+Math.round(f.dist)+" m · C"+f.c+" · elev "+f.elev.toFixed(2)+"° · ToF "+f.tof.toFixed(1)+"s";
-      else fireTxt="hors portée Nest";
+      fireTxt=f.c ? "AZ <b>"+f.az.toFixed(1)+"°</b> · "+Math.round(f.dist)+" m · C"+f.c+" · élév "+f.elev.toFixed(2)+"° · ToF "+f.tof.toFixed(1)+"s" : esc(f.err);
     }
-    const safeTag=fr.unsafe?'<span class="tag-bad">UNSAFE</span>':'<span class="tag-ok">SAFE</span>';
     html+="<div style='border-bottom:1px solid #3d3224;padding:6px 0'>";
-    html+="<b>Impact #"+(idx+1)+" "+ap.token+"</b> · "+shell+" · R "+sh.blast+" km "+safeTag;
-    html+=" <button class='g s' type='button' data-aim-del='"+idx+"'>x</button>";
+    html+="<b>Impact #"+(idx+1)+" "+esc(ap.token)+"</b> · "+shell+" · R "+sh.blast_km+" km "+(fr.unsafe?'<span class="tag-bad">UNSAFE</span>':'<span class="tag-ok">SAFE</span>');
+    html+=" <button class='g s' type='button' data-aim-del='"+idx+"' title='Supprimer cet impact'>x</button>";
     html+="<div>"+fireTxt+"</div>";
-    if(fr.safeShell) html+="<div class='hint'>Obus 0 dégât (STAR/SMOKE/TGAS) — alliés SAFE</div>";
-    else if(fr.unsafe) html+="<div style='color:#c45c2a'>alliés: "+fr.hits.map(h=>h.name+"@"+h.dist_m+"m").join(", ")+"</div>";
-    if(covered.length) html+="<div class='active'>"+covered.length+" cible(s): "+covered.map(c=>c.name+" ("+c.dist_m+"m, "+c.vs.tag+")").join("; ")+"</div>";
+    if(fr.safeShell) html+="<div class='hint'>Obus 0 dégât (STAR / SMOKE / TEAR GAS…) — amis SAFE</div>";
+    else if(fr.unsafe) html+="<div class='bad'>Amis dans le rayon : "+esc(hitsText(fr))+"</div>";
+    if(covered.length) html+="<div class='active'>"+covered.length+" cible(s) : "+covered.map(c=>esc(c.name)+" ("+c.dist_m+" m, "+c.vs.tag+")").join(" ; ")+"</div>";
     else html+="<div class='hint'>Aucune cible active dans le rayon</div>";
     const bad=covered.filter(c=>!c.vs.ok);
-    if(bad.length) html+="<div style='color:#c45c2a'>⚠ "+bad.map(c=>c.name+": "+c.vs.detail).join(" · ")+"</div>";
+    if(bad.length) html+="<div class='bad'>⚠ "+bad.map(c=>esc(c.name)+" : "+esc(c.vs.detail)).join(" · ")+"</div>";
     html+="</div>";
   });
-  box.innerHTML=html;
-  return true;
+  setHTML(box, html);
 }
-function setAimFromCell(token, shell){
+function addAim(token, shell){
   const c=parseCell(token);
-  if(!c){ alert("Case impact invalide"); return; }
-  const sh=shell||$("aimShell").value||"HCHE";
-  AIM_POINTS.push({x:c.x,y:c.y,token:c.token,shell:sh});
-  $("aimCell").value=c.token;
-  evaluateAim();
-  go();
-}
-function clearAims(){
-  AIM_POINTS=[];
+  if(!c){ alert("Case impact invalide (ex. C4 2:5)"); return; }
+  AIM_POINTS.push({x:c.x, y:c.y, token:c.token, shell:SHELLS[shell]?shell:"HCHE"});
   $("aimCell").value="";
-  evaluateAim();
   go();
 }
-function row(label,cell,nest,idx){
-  const f=fireFrom(nest,cell);
+
+// --- Calcul -------------------------------------------------------------------------------------
+function row(label, cell, nest, idx, tube){
   const tok=(cell.alias?cell.alias+" · ":"")+(cell.token||cellOf(cell.x,cell.y).token);
   const al=cell.alias?ALIASES.find(a=>a.name===cell.alias):null;
-  const shell=(al&&al.shell)||"HE";
-  const sh=SHELLS[shell]||SHELLS.HE;
-  const kind=(al&&al.kind)||"unknown";
-  const dead=al&&(al.status==="destroyed"||al.status==="neutralized");
-  const aim={x:cell.x, y:cell.y};
-  const fr=alliesInBlast(aim, shell);
-  const vs=shellVsTarget(shell, kind);
-  const unsafeTag=fr.unsafe?' <span style="background:#c45c2a;color:#fff;padding:1px 5px;font-size:10px">UNSAFE</span>':' <span style="background:#2a5a2a;color:#cfc;padding:1px 5px;font-size:10px">SAFE</span>';
-  const vsCol=vs.level==="ok"?"#2a5a2a":"#c45c2a";
-  const vsTag=' <span style="background:'+vsCol+';color:#fff;padding:1px 5px;font-size:10px" title="'+vs.detail+'">'+vs.tag+'</span>';
-  const unsafeDetail=fr.unsafe?(" alliés: "+fr.hits.map(h=>h.name+"@"+h.dist_m+"m").join(", ")):" ";
-  const vsDetail=vs.ok?"":(" · ⚠ "+vs.detail);
-  const fire=dead?(al.status==="neutralized"?"NEUTRALISÉ":"DÉTRUIT"):(f.c?("C"+f.c+" · "+f.elev.toFixed(2)+"° · "+f.tof.toFixed(1)+"s · "+shell+" R"+sh.blast+"km"+vsTag+unsafeTag+unsafeDetail+vsDetail):"hors portée");
-  const named = !cell.alias;
-  const save = named
-    ? '<input id="solName'+idx+'" placeholder="Nommer" style="width:110px;display:inline-block"> '+
+  const shell=al?al.shell:"HE", sh=SHELLS[shell]||SHELLS.HE, kind=al?al.kind:"unknown";
+  const dead=!!(al && al.status==="neutralized");
+  const f=nest?fireFrom(nest,cell):null;
+  const fr=friendliesInBlast(cell, shell), vs=N.effectiveness(shell, kind);
+  let fireHtml, fireText;
+  if(dead){ fireHtml=fireText="NEUTRALISÉ"; }
+  else if(!f){ fireHtml='<span class="bad">Canon non défini</span>'; fireText="canon non défini"; }
+  else if(f.err){ fireHtml=esc(f.err); fireText=f.err; }
+  else {
+    const safe=fr.unsafe?' <span class="tag-bad" title="'+esc(hitsText(fr))+'">UNSAFE</span>':' <span class="tag-ok">SAFE</span>';
+    const vsTag=' <span class="'+(vs.level==="ok"?"tag-ok":vs.level==="weak"?"tag-mid":"tag-bad")+'" title="'+esc(vs.detail)+'">'+vs.tag+'</span>';
+    fireHtml="C"+f.c+" · "+f.elev.toFixed(2)+"° · "+f.tof.toFixed(1)+"s · "+shell+" R"+sh.blast_km+"km"+vsTag+safe+
+      (fr.unsafe?" <span class='bad'>amis : "+esc(hitsText(fr))+"</span>":"")+(vs.ok?"":" · ⚠ "+esc(vs.detail))+
+      (tube?" · <b>"+tube+"</b>":"");
+    fireText="C"+f.c+" "+shell+" R"+sh.blast_km+"km "+vs.tag+(fr.unsafe?" UNSAFE ("+hitsText(fr)+")":" SAFE")+(vs.ok?"":" | "+vs.detail)+(tube?"  TUBE "+tube:"");
+  }
+  const save=!cell.alias
+    ? '<input id="solName'+idx+'" placeholder="Nommer" aria-label="Nom du point" style="width:110px;display:inline-block"> '+
       '<button class="g s" type="button" data-save="'+idx+'" data-role="target">Cible</button> '+
       '<button class="g s" type="button" data-save="'+idx+'" data-role="ref">Réf</button> '+
       '<button class="g s" type="button" data-save="'+idx+'" data-role="spotter">Obs</button>'
     : (al?'<button class="g s" type="button" data-pick="'+ALIASES.indexOf(al)+'">Éditer</button>':'—');
+  const az=f?"<b>"+f.az.toFixed(1)+"°</b>":"—", dist=f?Math.round(f.dist)+" m":"—";
   return {
-    html:"<tr style='"+(dead?"opacity:.5":"")+"'><td>"+label+"</td><td>"+tok+"</td><td>"+Math.round(cell.x)+"/"+Math.round(cell.y)+"</td><td><b>"+f.az.toFixed(1)+"°</b></td><td>"+Math.round(f.dist)+" m</td><td>"+fire+"</td><td>"+save+"</td></tr>",
-    text:label+"  "+tok+"  AZ "+f.az.toFixed(1)+"°  DIST "+Math.round(f.dist)+" m  "+(dead?(al.status==="neutralized"?"NEUTRALISÉ":"DÉTRUIT"):(f.c?("C"+f.c+" "+shell+" R"+sh.blast+"km "+vs.tag+(fr.unsafe?" UNSAFE":" SAFE")+(vs.ok?"":(" | "+vs.detail))):"hors portee")),
-    f, cell, label
+    html:"<tr style='"+(dead?"opacity:.5":"")+"'><td>"+esc(label)+"</td><td>"+esc(tok)+"</td><td>"+Math.round(cell.x)+"/"+Math.round(cell.y)+"</td><td>"+az+"</td><td>"+dist+"</td><td>"+fireHtml+"</td><td>"+save+"</td></tr>",
+    text:label+"  "+tok+(f?"  AZ "+f.az.toFixed(1)+"°  DIST "+Math.round(f.dist)+" m":"")+"  "+fireText,
+    f
   };
 }
-
+function triangulate(marks){
+  const ids={azaz:["a1","a2"],azd:["b1","b2"],dd:["c1","c2"]}[MODE];
+  const A=resolve($(ids[0]).value), B=resolve($(ids[1]).value);
+  if(!A||!B) return {error:"points A et B : nom de raccourci ou case (ex. B2 1:2)", points:[]};
+  marks.points.push(Object.assign({},A,{col:"#d4a017",lab:A.alias||"A"}), Object.assign({},B,{col:"#8aaf5a",lab:B.alias||"B"}));
+  const num=id=>{ const v=$(id).value.trim(); return v===""?NaN:+v; };
+  if(MODE==="azaz"){
+    const az1=num("az1"), az2=num("az2");
+    if(!isFinite(az1)||!isFinite(az2)) return {error:"azimuts invalides", points:[]};
+    marks.rays.push({p:A,az:az1},{p:B,az:az2,col:"#8aaf5a"});
+    return N.rayRay(A,az1,B,az2);
+  }
+  if(MODE==="azd"){
+    const az=num("baz"), dkm=num("bd");
+    if(!isFinite(az)||!(dkm>0)) return {error:"azimut ou distance invalide", points:[]};
+    marks.rays.push({p:A,az}); marks.circles.push({p:B,r:dkm,col:"#8aaf5a"});
+    return N.rayCircle(A,az,B,dkm*1000);
+  }
+  const r1=num("cd1"), r2=num("cd2");
+  if(!(r1>0)||!(r2>0)) return {error:"distances invalides", points:[]};
+  marks.circles.push({p:A,r:r1},{p:B,r:r2,col:"#8aaf5a"});
+  return N.circleCircle(A,r1*1000,B,r2*1000);
+}
 function go(){
   const marks={points:[],lines:[],rays:[],circles:[]};
-  const rows=[];
+  const rows=[], msgs=[];
   LAST_SOLS=[];
-  let kpi="";
-  const gun=resolve($("gun").value);
+  const nest=resolve($("nest").value);
+  if(nest) marks.points.push(Object.assign({},nest,{col:"#d4a017",lab:nest.alias||"NEST"}));
 
   if(MODE==="direct"){
-    const nest=resolve($("nest").value);
-    if(!nest){
-      $("res").innerHTML='<p class="bad">Canon non défini. Clique <b>Iron Nest</b> sur un raccourci, ou tape B2 1:2 dans le champ Nest.</p>';
-      $("kpis").innerHTML="";
-      renderList();
-      return;
+    if(!nest) msgs.push('Canon non défini. Clique <b>Iron Nest</b> sur un raccourci, ou tape B2 1:2 dans le champ Canon.');
+    else {
+      const fromText=$("tgts").value.split(/\n/).map(s=>s.trim()).filter(Boolean);
+      const fromBoard=ALIASES.filter(a=>a.role==="target" && a.assigned!==false).map(a=>a.name);
+      const seen=new Set(), unknown=[];
+      fromText.concat(fromBoard).forEach(line=>{
+        const t=resolve(line);
+        if(!t){ unknown.push(line); return; }
+        const key=t.alias||t.token;
+        if(seen.has(key)) return;
+        seen.add(key);
+        const al=t.alias?ALIASES.find(a=>a.name===t.alias):null;
+        if(al && al.assigned===false) return;
+        const label=t.alias||("T"+(LAST_SOLS.length+1));
+        const dead=!!(al && al.status==="neutralized");
+        marks.points.push(Object.assign({},t,{col:dead?"#666":"#c45c2a",lab:label+(dead?" ○":"")}));
+        if(!dead) marks.lines.push({a:nest,b:t});
+        const tube=al && !dead ? (al.tube==="D"?"DROITE":"GAUCHE") : null;
+        rows.push(row(label,t,nest,LAST_SOLS.length,tube));
+        LAST_SOLS.push({token:t.token,label});
+      });
+      if(unknown.length) msgs.push("Ignoré (ni raccourci ni case) : "+unknown.map(esc).join(", "));
     }
-    marks.points.push(Object.assign({},nest,{col:"#d4a017",lab:nest.alias||"NEST"}));
-    // cibles : textarea + toutes les cibles assignées au Nest
-    const fromText=$("tgts").value.split(/\n/).map(s=>s.trim()).filter(Boolean);
-    const fromBoard=ALIASES.filter(a=>a.role==="target" && a.assigned!==false).map(a=>a.name);
-    const names=[...new Set(fromText.concat(fromBoard))];
-    names.forEach((line,i)=>{
-      const t=resolve(line);
-      if(!t) return;
-      const al=t.alias?ALIASES.find(a=>a.name===t.alias):null;
-      if(al && al.assigned===false) return;
-      const tube=al&&al.tube==="D"?"DROITE":"GAUCHE";
-      const st=al&&al.status||"active";
-      if(st==="destroyed"||st==="neutralized"){
-        marks.points.push(Object.assign({},t,{col:"#666",lab:(t.alias||("T"+(i+1)))+(st==="destroyed"?" ✕":" ○")}));
-      } else {
-        marks.points.push(Object.assign({},t,{col:"#c45c2a",lab:t.alias||("T"+(i+1))}));
-        marks.lines.push({a:nest,b:t});
-      }
-      const r=row(t.alias||("T"+(i+1)),t,nest,rows.length);
-      if(al && st==="active") r.html=r.html.replace("</td></tr>", " · <b>"+tube+"</b></td></tr>");
-      if(al && st==="active") r.text+="  TUBE "+tube;
-      rows.push(r); LAST_SOLS.push({token:t.token,label:t.alias||("T"+(i+1))});
-    });
-    if(rows[0]) kpi='<div><b>'+rows[0].f.az.toFixed(1)+'°</b>azimut</div><div><b>'+Math.round(rows[0].f.dist)+' m</b>distance</div><div><b>'+(rows[0].f.c?("C"+rows[0].f.c):"—")+'</b>charge</div>';
+  } else {
+    const r=triangulate(marks);
+    if(r.error) msgs.push(esc(cap(r.error)));
+    else {
+      if(!nest) msgs.push("Canon non défini : position calculée, pas de solution de tir.");
+      r.points.forEach((p,i)=>{
+        const cell=cellOf(p.x,p.y), label="S"+(i+1);
+        marks.points.push(Object.assign({},cell,{col:"#c45c2a",lab:label}));
+        if(cell.token==="hors carte"){ rows.push({html:'<tr><td>'+label+'</td><td colspan="6">hors carte ('+Math.round(p.x)+' / '+Math.round(p.y)+' m)</td></tr>', text:label+"  hors carte"}); return; }
+        rows.push(row(label,cell,nest,LAST_SOLS.length,null));
+        LAST_SOLS.push({token:cell.token,label});
+      });
+      if(r.note) rows.push({html:'<tr><td colspan="7">'+esc(cap(r.note))+'</td></tr>', text:cap(r.note)});
+    }
   }
-
-  if(MODE==="azaz"){
-    const A=resolve($("a1").value), B=resolve($("a2").value);
-    const az1=+$("az1").value, az2=+$("az2").value;
-    if(!A||!B){ $("res").innerHTML='<p class="bad">Points A et B : nom de raccourci ou case.</p>'; return; }
-    marks.points.push(Object.assign({},A,{col:"#d4a017",lab:A.alias||"A"}), Object.assign({},B,{col:"#8aaf5a",lab:B.alias||"B"}));
-    marks.rays.push({p:A,az:az1},{p:B,az:az2,col:"#8aaf5a"});
-    if(A.x===B.x&&A.y===B.y){ $("res").innerHTML='<p class="bad">Deux azimuts depuis le même point ne localisent pas.</p>'; draw(marks); return; }
-    const r=rayRay(A,az1,B,az2);
-    if(r.error){ $("res").innerHTML='<p class="bad">'+r.error+'</p>'; draw(marks); return; }
-    const nest=gun||A;
-    r.points.forEach((p,i)=>{ const cell=cellOf(p.x,p.y); marks.points.push(Object.assign({},cell,{col:"#c45c2a",lab:"S"+(i+1)})); rows.push(row("S"+(i+1),cell,nest,rows.length)); LAST_SOLS.push({token:cell.token,label:"S"+(i+1)}); });
-    if(r.note) rows.push({html:'<tr><td colspan="7">'+r.note+'</td></tr>',text:r.note});
-  }
-
-  if(MODE==="azd"){
-    const A=resolve($("b1").value), B=resolve($("b2").value);
-    const az=+$("baz").value, dkm=+$("bd").value;
-    if(!A||!B){ $("res").innerHTML='<p class="bad">Points A et B requis.</p>'; return; }
-    marks.points.push(Object.assign({},A,{col:"#d4a017",lab:A.alias||"A"}), Object.assign({},B,{col:"#8aaf5a",lab:B.alias||"B"}));
-    marks.rays.push({p:A,az}); marks.circles.push({p:B,r:dkm,col:"#8aaf5a"});
-    const r=rayCircle(A,az,B,dkm*1000);
-    if(r.error){ $("res").innerHTML='<p class="bad">'+r.error+'</p>'; draw(marks); return; }
-    const nest=gun||A;
-    r.points.forEach((p,i)=>{ const cell=cellOf(p.x,p.y); marks.points.push(Object.assign({},cell,{col:"#c45c2a",lab:"S"+(i+1)})); rows.push(row("S"+(i+1),cell,nest,rows.length)); LAST_SOLS.push({token:cell.token,label:"S"+(i+1)}); });
-  }
-
-  if(MODE==="dd"){
-    const A=resolve($("c1").value), B=resolve($("c2").value);
-    const r1=+$("cd1").value, r2=+$("cd2").value;
-    if(!A||!B){ $("res").innerHTML='<p class="bad">Points A et B requis.</p>'; return; }
-    marks.points.push(Object.assign({},A,{col:"#d4a017",lab:A.alias||"A"}), Object.assign({},B,{col:"#8aaf5a",lab:B.alias||"B"}));
-    marks.circles.push({p:A,r:r1},{p:B,r:r2,col:"#8aaf5a"});
-    const r=circleCircle(A,r1*1000,B,r2*1000);
-    if(r.error){ $("res").innerHTML='<p class="bad">'+r.error+'</p>'; draw(marks); return; }
-    const nest=gun||A;
-    r.points.forEach((p,i)=>{ const cell=cellOf(p.x,p.y); marks.points.push(Object.assign({},cell,{col:"#c45c2a",lab:"S"+(i+1)})); rows.push(row("S"+(i+1),cell,nest,rows.length)); LAST_SOLS.push({token:cell.token,label:"S"+(i+1)}); });
-    if(r.note) rows.push({html:'<tr><td colspan="7">'+r.note+'</td></tr>',text:r.note});
-  }
-
-  $("kpis").innerHTML=kpi;
-  $("res").innerHTML='<table><thead><tr><th>#</th><th>Point</th><th>XY m</th><th>Az</th><th>Dist</th><th>Tir</th><th>Enregistrer</th></tr></thead><tbody>'+rows.map(r=>r.html).join("")+'</tbody></table>';
+  const first=rows.find(r=>r.f && r.f.c);
+  setHTML($("kpis"), first?'<div><b>'+first.f.az.toFixed(1)+'°</b>azimut</div><div><b>'+Math.round(first.f.dist)+' m</b>distance</div><div><b>C'+first.f.c+'</b>charge</div>':"");
+  setHTML($("res"), msgs.map(m=>'<p class="bad">'+m+'</p>').join("")+
+    (rows.length?'<div style="overflow:auto"><table><thead><tr><th>#</th><th>Point</th><th>XY m</th><th>Az</th><th>Dist</th><th>Tir</th><th>Enregistrer</th></tr></thead><tbody>'+rows.map(r=>r.html).join("")+'</tbody></table></div>':""));
   $("out").textContent=rows.map(r=>r.text).join("\n");
   draw(marks);
   renderList();
   renderTargetBoard();
-  if($("aimShell") && !$("aimShell").options.length) fillShellSelect($("aimShell"), "HCHE");
   evaluateAim();
 }
 
+// --- Événements -------------------------------------------------------------------------------
 $("btnAdd").addEventListener("click", addAlias);
 $("btnSeed").addEventListener("click", seed);
 $("btnReset").addEventListener("click", resetAll);
@@ -1083,148 +877,139 @@ $("btnSaveSess").addEventListener("click", saveSession);
 $("btnLoadSess").addEventListener("click", loadSession);
 $("btnDelSess").addEventListener("click", delSession);
 $("btnGo").addEventListener("click", go);
-$("btnCopy").addEventListener("click", function(){ navigator.clipboard.writeText($("out").textContent); });
+$("btnCopy").addEventListener("click", function(){
+  const btn=this, done=ok=>{ btn.textContent=ok?"Copié":"Copie impossible"; setTimeout(()=>{ btn.textContent="Copier"; },1500); };
+  if(navigator.clipboard) navigator.clipboard.writeText($("out").textContent).then(()=>done(true), ()=>done(false));
+  else done(false);
+});
 $("aliasList").addEventListener("click", onListClick);
 $("aliasList").addEventListener("change", function(e){
   const inp=e.target.closest("input.cell-edit");
   if(!inp) return;
-  const i=+inp.getAttribute("data-i");
-  if(!ALIASES[i]) return;
+  const a=ALIASES[+inp.getAttribute("data-i")];
+  if(!a) return;
   const cell=parseCell(inp.value);
-  if(!cell){
-    inp.style.borderColor="#c45c2a";
-    alert("Case invalide. Format : A7 8:9 ou B3 4:4");
-    inp.value=ALIASES[i].cell;
-    return;
-  }
-  inp.style.borderColor="";
-  ALIASES[i].cell=cell.token;
-  inp.value=cell.token;
-  if(ALIASES[i].role==="nest"){
-    $("nest").value=ALIASES[i].name;
-    $("gun").value=ALIASES[i].name;
-  }
-  go();
+  if(!cell){ alert("Case invalide. Format : A7 8:9 ou B3 4.5:4"); inp.value=a.cell; return; }
+  a.cell=cell.token;
+  syncSelPanel(); go();
 });
 $("aliasList").addEventListener("keydown", function(e){
   const inp=e.target.closest("input.cell-edit");
-  if(!inp) return;
-  if(e.key==="Enter"){ e.preventDefault(); inp.blur(); }
+  if(inp && e.key==="Enter"){ e.preventDefault(); inp.blur(); }
+});
+$("tgtBoardBody").addEventListener("change", function(e){
+  const el=e.target.closest("[data-tb]");
+  if(!el) return;
+  const i=+el.getAttribute("data-i"), a=ALIASES[i];
+  if(!a) return;
+  const field=el.getAttribute("data-tb");
+  if(field==="assign") a.assigned=el.checked;
+  else if(field==="tube") a.tube=el.value==="D"?"D":"G";
+  else if(field==="status") a.status=el.value==="neutralized"?"neutralized":"active";
+  if(SELECTED_IDX===i) syncSelPanel();
+  go();
+});
+$("tgtBoardBody").addEventListener("click", function(e){
+  const el=e.target.closest('[data-act="edit"]');
+  if(el) selectPoint(+el.getAttribute("data-i"));
 });
 $("res").addEventListener("click", function(e){
   const pick=e.target.closest("button[data-pick]");
   if(pick){ selectPoint(+pick.getAttribute("data-pick")); return; }
   const b=e.target.closest("button[data-save]");
-  if(!b) return;
-  saveSol(+b.getAttribute("data-save"), b.getAttribute("data-role"));
+  if(b) saveSol(+b.getAttribute("data-save"), b.getAttribute("data-role"));
 });
-document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click", function(){ tab(b.getAttribute("data-mode")); }));
+document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click", ()=>tab(b.getAttribute("data-mode"))));
 document.querySelectorAll("select.pick").forEach(sel=>{
   sel.addEventListener("change", function(){
     if(!sel.value) return;
-    const target=$(sel.getAttribute("data-for"));
-    if(target) target.value=sel.value;
+    $(sel.getAttribute("data-for")).value=sel.value;
+    sel.value="";
     go();
   });
 });
 $("addTgt").addEventListener("change", function(){
   if(!this.value) return;
-  const lines=$("tgts").value.split(/\n/).map(s=>s.trim()).filter(Boolean);
-  if(!lines.includes(this.value)) lines.push(this.value);
-  $("tgts").value=lines.join("\n");
+  addTargetLine(this.value);
   this.value="";
   go();
 });
-["nest","tgts","gun","a1","a2","az1","az2","b1","b2","baz","bd","c1","c2","cd1","cd2","modeSel"].forEach(id=>{
-  const el=$(id); if(!el) return;
-  el.addEventListener("input", go);
-  el.addEventListener("change", go);
+["nest","tgts","a1","a2","az1","az2","b1","b2","baz","bd","c1","c2","cd1","cd2"].forEach(id=>$(id).addEventListener("input", go));
+$("modeSel").addEventListener("change", go);
+// Point de chute : Entrée ou bouton (pas d'ajout sur « change », sinon doublon à la perte du focus)
+$("btnAimAdd").addEventListener("click", ()=>{ if($("aimCell").value.trim()) addAim($("aimCell").value.trim(), $("aimShell").value); });
+$("aimCell").addEventListener("keydown", function(e){
+  if(e.key==="Enter"){ e.preventDefault(); if(this.value.trim()) addAim(this.value.trim(), $("aimShell").value); }
 });
-
-$("btnAimClear").addEventListener("click", function(){ clearAims(); });
+$("btnAimClear").addEventListener("click", ()=>{ AIM_POINTS=[]; go(); });
 $("aimResult").addEventListener("click", function(e){
   const b=e.target.closest("[data-aim-del]");
   if(!b) return;
   AIM_POINTS.splice(+b.getAttribute("data-aim-del"), 1);
-  evaluateAim(); go();
-});
-$("aimCell").addEventListener("change", function(){ if(this.value.trim()) setAimFromCell(this.value.trim(), $("aimShell").value); });
-$("aimCell").addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); if(this.value.trim()) setAimFromCell(this.value.trim(), $("aimShell").value); }});
-$("aimShell").addEventListener("change", function(){ if(AIM_POINTS.length){ AIM_POINTS.forEach(a=>a.shell=this.value); evaluateAim(); go(); }});
-$("mapAction").addEventListener("change", function(){
-  if(this.value!=="move") MOVE_IDX=null;
-  updateMapHint();
-});
-// Édition clavier du point sélectionné (sous la carte)
-["selName","selCell","selRole","selKind","selShell","selStatus"].forEach(function(id){
-  const el=$(id); if(!el) return;
-  el.addEventListener("change", function(){
-    if(id==="selKind" && !$("selShell").dataset.locked){
-      const def=DEFAULT_SHELL[$("selKind").value]||"HE";
-      fillShellSelect($("selShell"), def);
-    }
-    applySelPanel();
-  });
-  el.addEventListener("keydown", function(e){
-    if(e.key==="Enter"){ e.preventDefault(); this.blur(); applySelPanel(); }
-  });
-});
-$("selShell").addEventListener("change", function(){ this.dataset.locked="1"; });
-$("selKind").addEventListener("change", function(){ $("selShell").dataset.locked=""; });
-let dragging=false;
-let dragMoved=false;
-$("map").addEventListener("mousemove", function(ev){
-  const w=svgEventToMeters(ev);
-  const el=$("mapCoord");
-  if(!w||!el){ if(el) el.textContent="—"; return; }
-  const cell=cellOf(w.x,w.y);
-  el.textContent=cell.token+"  ·  X "+Math.round(w.x)+" m  Y "+Math.round(w.y)+" m";
-});
-$("map").addEventListener("mouseleave", function(){ const el=$("mapCoord"); if(el) el.textContent="—"; });
-$("map").addEventListener("click", function(ev){
-  if(dragMoved){ dragMoved=false; return; }
-  const w=svgEventToMeters(ev);
-  if(!w) return;
-  placeOrMove(w.x, w.y);
-});
-$("map").addEventListener("mousedown", function(ev){
-  if($("mapAction").value==="off" || $("mapAction").value==="aim") return;
-  const w=svgEventToMeters(ev);
-  if(!w) return;
-  const near=findNearestAlias(w.x,w.y,600);
-  if(near>=0){
-    MOVE_IDX=near;
-    $("mapAction").value="move";
-    dragging=true;
-    dragMoved=false;
-    updateMapHint();
-    go();
-    ev.preventDefault();
-  }
-});
-window.addEventListener("mousemove", function(ev){
-  if(!dragging || MOVE_IDX==null) return;
-  const w=svgEventToMeters(ev);
-  if(!w) return;
-  if(w.x<0||w.y<0||w.x>20000||w.y>10000) return;
-  const cell=cellOf(w.x,w.y);
-  if(cell.token==="hors carte") return;
-  ALIASES[MOVE_IDX].cell=cell.token;
-  dragMoved=true;
   go();
 });
-window.addEventListener("mouseup", function(){
-  if(dragging){
-    dragging=false;
-    if(dragMoved) MOVE_IDX=null;
-    updateMapHint();
-    go();
-  }
+$("aimShell").addEventListener("change", function(){
+  if(AIM_POINTS.length){ AIM_POINTS.forEach(a=>{ a.shell=this.value; }); go(); }
+});
+$("mapAction").addEventListener("change", updateMapHint);
+// Édition clavier du point sélectionné : Entrée = valider (via « change » à la perte du focus)
+["selName","selCell","selRole","selKind","selShell","selStatus"].forEach(id=>{
+  $(id).addEventListener("change", function(){
+    if(id==="selKind") fillShellSelect($("selShell"), defaultShell($("selKind").value));
+    applySelPanel();
+  });
+  $(id).addEventListener("keydown", function(e){
+    if(e.key==="Enter"){ e.preventDefault(); this.blur(); }
+  });
 });
 
-updateMapHint();
+// Carte : pointeur (souris, tactile, stylet). Tout se décide au relâchement : un geste
+// de moins de DRAG_PX pixels est un clic, au-delà c'est un glisser du point saisi.
+let gesture=null;
+const svg=$("map");
+svg.addEventListener("pointerdown", function(ev){
+  if(ev.button!==0) return;
+  const w=svgEventToMeters(ev);
+  if(!w) return;
+  const act=$("mapAction").value;
+  const idx=(act==="new"||act==="move")?findNearestAlias(w.x,w.y):-1;
+  const c=idx>=0?parseCell(ALIASES[idx].cell):null;
+  gesture={id:ev.pointerId, type:ev.pointerType, px:ev.clientX, py:ev.clientY, w, idx:c?idx:-1, ox:c?c.x:0, oy:c?c.y:0, dragging:false};
+  try{ svg.setPointerCapture(ev.pointerId); }catch(e){}
+});
+svg.addEventListener("pointermove", function(ev){
+  const w=svgEventToMeters(ev);
+  if(w){
+    const cell=cellOf(w.x,w.y);
+    $("mapCoord").textContent=cell.token+"  ·  X "+Math.round(w.x)+" m  Y "+Math.round(w.y)+" m";
+  }
+  if(!gesture || ev.pointerId!==gesture.id || gesture.idx<0 || !w) return;
+  if(!gesture.dragging){
+    if(Math.hypot(ev.clientX-gesture.px, ev.clientY-gesture.py)<DRAG_PX) return;
+    gesture.dragging=true;
+  }
+  // le point garde son décalage par rapport au curseur (pas de saut sous le pointeur)
+  const x=Math.min(GRID_W,Math.max(0,gesture.ox+w.x-gesture.w.x));
+  const y=Math.min(GRID_H,Math.max(0,gesture.oy+w.y-gesture.w.y));
+  ALIASES[gesture.idx].cell=cellOf(x,y).token;
+  if(SELECTED_IDX===gesture.idx) syncSelPanel();
+  go();
+});
+svg.addEventListener("pointerup", function(ev){
+  if(!gesture || ev.pointerId!==gesture.id) return;
+  const g=gesture;
+  gesture=null;
+  // au doigt, pas de focus clavier automatique (évite d'ouvrir le clavier virtuel)
+  const focus=g.type==="mouse";
+  if(g.dragging) selectPoint(g.idx, focus);
+  else onMapClick(g.w.x, g.w.y, focus);
+});
+svg.addEventListener("pointercancel", function(){ gesture=null; });
+svg.addEventListener("pointerleave", function(){ if(!gesture) $("mapCoord").textContent="—"; });
+
 renderAmmoRef();
 refreshSessList();
+fillShellSelect($("aimShell"), "HCHE");
 seed();
 })();
 </script>
